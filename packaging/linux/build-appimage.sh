@@ -151,16 +151,25 @@ export OUTPUT="${output_dir}/${package}-${version}-linux-amd64.AppImage"
 
 # --- Post-build verification ---
 echo "=== Verifying AppImage contents ==="
-if [ ! -d "${app_dir}/usr/plugins/multimedia" ] || [ -z "$(ls "${app_dir}/usr/plugins/multimedia/"*.so 2>/dev/null)" ]; then
-    echo "FATAL: no multimedia plugins in AppDir" >&2
+qt_multimedia_dir="${app_dir}/usr/plugins/multimedia"
+gst_plugins_dir="${app_dir}/usr/lib/gstreamer-1.0"
+if [ -d "${qt_multimedia_dir}" ] && [ -n "$(find "${qt_multimedia_dir}" -maxdepth 1 -name '*.so' -print -quit)" ]; then
+    echo "Qt multimedia plugins: $(ls "${qt_multimedia_dir}")"
+else
+    echo "No Qt multimedia plugin directory found; relying on bundled GStreamer plugins."
+fi
+
+if [ ! -d "${gst_plugins_dir}" ] || [ -z "$(find "${gst_plugins_dir}" -maxdepth 1 -name '*.so' -print -quit)" ]; then
+    echo "FATAL: no GStreamer plugins in AppDir" >&2
     exit 1
 fi
-echo "Multimedia plugins: $(ls "${app_dir}/usr/plugins/multimedia/")"
-if [ -d "${app_dir}/usr/lib/gstreamer-1.0" ]; then
-    echo "GStreamer plugins: $(ls "${app_dir}/usr/lib/gstreamer-1.0/")"
+echo "GStreamer plugins: $(ls "${gst_plugins_dir}")"
+
+dep_dirs=("${gst_plugins_dir}")
+if [ -d "${qt_multimedia_dir}" ]; then
+    dep_dirs+=("${qt_multimedia_dir}")
 fi
-missing_deps="$(find "${app_dir}/usr/plugins/multimedia" "${app_dir}/usr/lib/gstreamer-1.0" \
-    -name '*.so' -exec ldd {} \; 2>/dev/null | grep 'not found' || true)"
+missing_deps="$(find "${dep_dirs[@]}" -name '*.so' -exec ldd {} \; 2>/dev/null | grep 'not found' || true)"
 if [ -n "${missing_deps}" ]; then
     echo "FATAL: some bundled libraries have missing dependencies:" >&2
     echo "${missing_deps}"

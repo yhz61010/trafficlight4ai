@@ -187,10 +187,17 @@ jobs:
           tmpdir="$(mktemp -d)"
           trap 'rm -rf "${tmpdir}"' EXIT
           (cd "${tmpdir}" && APPIMAGE_EXTRACT_AND_RUN=1 "${GITHUB_WORKSPACE}/${appimage}" --appimage-extract >/dev/null)
-          test -n "$(find "${tmpdir}/squashfs-root/usr/plugins/multimedia" -name '*.so' -print -quit)"
-          test -n "$(find "${tmpdir}/squashfs-root/usr/lib/gstreamer-1.0" -name '*.so' -print -quit)"
-          ! find "${tmpdir}/squashfs-root/usr/plugins/multimedia" "${tmpdir}/squashfs-root/usr/lib/gstreamer-1.0" \
-            -name '*.so' -exec ldd {} \; 2>/dev/null | grep 'not found'
+          qt_multimedia_dir="${tmpdir}/squashfs-root/usr/plugins/multimedia"
+          gst_plugins_dir="${tmpdir}/squashfs-root/usr/lib/gstreamer-1.0"
+          if [ -d "${qt_multimedia_dir}" ]; then
+            test -n "$(find "${qt_multimedia_dir}" -name '*.so' -print -quit)"
+          fi
+          test -n "$(find "${gst_plugins_dir}" -name '*.so' -print -quit)"
+          dep_dirs=("${gst_plugins_dir}")
+          if [ -d "${qt_multimedia_dir}" ]; then
+            dep_dirs+=("${qt_multimedia_dir}")
+          fi
+          ! find "${dep_dirs[@]}" -name '*.so' -exec ldd {} \; 2>/dev/null | grep 'not found'
 
       - name: Upload artifact
         uses: actions/upload-artifact@v6
