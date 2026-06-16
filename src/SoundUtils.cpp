@@ -4,6 +4,7 @@
 #include <QMediaPlayer>
 #include <QAudioOutput>
 #include <QMessageBox>
+#include <QPointer>
 #include <QUrl>
 
 QUrl soundUrlForPath(const QString &filePath)
@@ -29,23 +30,35 @@ void playSound(const QString &filePath, QObject *errorContext)
         player->setAudioOutput(audioOutput);
         player->setSource(url);
 
+        auto *cleaned = new bool(false);
+        QObject::connect(player, &QObject::destroyed, player, [cleaned]() { delete cleaned; });
+
+        QPointer<QObject> ctx(errorContext);
+
+        auto cleanup = [player, cleaned]() {
+            if (*cleaned)
+                return;
+            *cleaned = true;
+            player->deleteLater();
+        };
+
         QObject::connect(player, &QMediaPlayer::errorOccurred,
-                         player, [player, errorContext, filePath]
+                         player, [cleanup, ctx, filePath]
                          (QMediaPlayer::Error, const QString &) {
-            if (errorContext) {
-                auto *widget = qobject_cast<QWidget *>(errorContext);
+            QApplication::beep();
+            if (ctx) {
+                auto *widget = qobject_cast<QWidget *>(ctx.data());
                 QMessageBox::warning(widget,
                     QObject::tr("Audio Error"),
-                    QObject::tr("Invalid audio file: %1").arg(filePath));
+                    QObject::tr("Failed to play: %1").arg(filePath));
             }
-            player->deleteLater();
+            cleanup();
         });
 
         QObject::connect(player, &QMediaPlayer::playbackStateChanged,
-                         player, [player](QMediaPlayer::PlaybackState state) {
-            if (state == QMediaPlayer::StoppedState) {
-                player->deleteLater();
-            }
+                         player, [cleanup](QMediaPlayer::PlaybackState state) {
+            if (state == QMediaPlayer::StoppedState)
+                cleanup();
         });
 
         player->play();

@@ -79,6 +79,31 @@ elif [ -x /usr/lib/qt6/bin/qmake ]; then
 fi
 
 export APPIMAGE_EXTRACT_AND_RUN=1
+
+# --- Qt multimedia plugin ---
+# linuxdeploy-plugin-qt only deploys plugins that the executable links directly.
+# QMediaPlayer loads the multimedia backend at runtime, so we must ask explicitly.
+export EXTRA_QT_PLUGINS="multimedia"
+
+# --- GStreamer plugins for OGG playback ---
+gst_dir="/usr/lib/x86_64-linux-gnu/gstreamer-1.0"
+if [ -d "${gst_dir}" ]; then
+    gst_target="${app_dir}/usr/lib/gstreamer-1.0"
+    mkdir -p "${gst_target}"
+    for plugin in libgstcoreelements libgsttypefindfunctions libgstplayback \
+                  libgstogg libgstvorbis libgstaudioconvert libgstaudioresample \
+                  libgstpulseaudio libgstalsa; do
+        [ -f "${gst_dir}/${plugin}.so" ] && cp -a "${gst_dir}/${plugin}.so" "${gst_target}/"
+    done
+    echo "Bundled GStreamer plugins: $(ls "${gst_target}" 2>/dev/null | tr '\n' ' ')"
+fi
+
+# Hook sourced by linuxdeploy-plugin-qt's AppRun wrapper.
+mkdir -p "${app_dir}/apprun-hooks"
+cat > "${app_dir}/apprun-hooks/gstreamer-env.sh" << 'HOOK'
+export GST_PLUGIN_PATH="${APPDIR}/usr/lib/gstreamer-1.0"
+HOOK
+
 export OUTPUT="${output_dir}/${package}-${version}-linux-amd64.AppImage"
 "${linuxdeploy}" \
     --appdir "${app_dir}" \
@@ -88,3 +113,20 @@ export OUTPUT="${output_dir}/${package}-${version}-linux-amd64.AppImage"
     --icon-file "${app_dir}/usr/share/pixmaps/${package}.png" \
     --plugin qt \
     --output appimage
+
+# --- Post-build verification ---
+echo "=== Verifying AppImage contents ==="
+if [ ! -d "${app_dir}/usr/plugins/multimedia" ] || [ -z "$(ls "${app_dir}/usr/plugins/multimedia/"*.so 2>/dev/null)" ]; then
+    echo "FATAL: no multimedia plugins in AppDir" >&2
+    exit 1
+fi
+echo "Multimedia plugins: $(ls "${app_dir}/usr/plugins/multimedia/")"
+if [ -d "${app_dir}/usr/lib/gstreamer-1.0" ]; then
+    echo "GStreamer plugins: $(ls "${app_dir}/usr/lib/gstreamer-1.0/")"
+fi
+missing_deps="$(find "${app_dir}/usr/plugins/multimedia" "${app_dir}/usr/lib/gstreamer-1.0" \
+    -name '*.so' -exec ldd {} \; 2>/dev/null | grep 'not found' || true)"
+if [ -n "${missing_deps}" ]; then
+    echo "WARNING: some bundled libraries have missing dependencies:"
+    echo "${missing_deps}"
+fi
