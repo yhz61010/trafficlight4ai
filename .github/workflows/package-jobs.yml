@@ -196,7 +196,8 @@ jobs:
           test -n "$(find "${gst_plugins_dir}" -name '*.so' -print -quit)"
           for required_plugin in libgstcoreelements.so libgsttypefindfunctions.so libgstplayback.so \
                                  libgstogg.so libgstvorbis.so libgstaudioconvert.so \
-                                 libgstaudioresample.so libgstvolume.so libgstautodetect.so; do
+                                 libgstaudioresample.so libgstvolume.so libgstautodetect.so \
+                                 libgstapp.so libgstvideoconvertscale.so; do
             test -f "${gst_plugins_dir}/${required_plugin}"
           done
           test -x "${gst_scanner}"

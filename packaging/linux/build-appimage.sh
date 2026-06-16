@@ -130,7 +130,8 @@ if [ -d "${gst_dir}" ]; then
     mkdir -p "${gst_target}"
     for plugin in libgstcoreelements libgsttypefindfunctions libgstplayback \
                   libgstogg libgstvorbis libgstaudioconvert libgstaudioresample \
-                  libgstvolume libgstautodetect libgstgio libgstpulseaudio libgstalsa; do
+                  libgstvolume libgstautodetect libgstapp libgstvideoconvertscale \
+                  libgstgio libgstpulseaudio libgstalsa; do
         if [ -f "${gst_dir}/${plugin}.so" ]; then
             cp -a "${gst_dir}/${plugin}.so" "${gst_target}/"
             copy_library_dependency "${gst_target}/${plugin}.so"
@@ -188,7 +189,8 @@ fi
 echo "GStreamer plugins: $(ls "${gst_plugins_dir}")"
 for required_plugin in libgstcoreelements.so libgsttypefindfunctions.so libgstplayback.so \
                        libgstogg.so libgstvorbis.so libgstaudioconvert.so \
-                       libgstaudioresample.so libgstvolume.so libgstautodetect.so; do
+                       libgstaudioresample.so libgstvolume.so libgstautodetect.so \
+                       libgstapp.so libgstvideoconvertscale.so; do
     if [ ! -f "${gst_plugins_dir}/${required_plugin}" ]; then
         echo "FATAL: missing required GStreamer plugin ${required_plugin}" >&2
         exit 1
