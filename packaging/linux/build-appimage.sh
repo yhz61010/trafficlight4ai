@@ -106,9 +106,22 @@ copy_library_dependency() {
 }
 
 # --- Qt multimedia plugin ---
-# linuxdeploy-plugin-qt only deploys plugins that the executable links directly.
-# QMediaPlayer loads the multimedia backend at runtime, so we must ask explicitly.
-export EXTRA_QT_PLUGINS="multimedia"
+# linuxdeploy-plugin-qt only deploys plugins the executable links directly.
+# QMediaPlayer loads the multimedia backend at runtime; EXTRA_QT_PLUGINS is
+# deprecated in current linuxdeploy-plugin-qt, so copy manually.
+qt_plugin_dir="${QMAKE:+$(${QMAKE} -query QT_INSTALL_PLUGINS 2>/dev/null)}"
+qt_plugin_dir="${qt_plugin_dir:-/usr/lib/x86_64-linux-gnu/qt6/plugins}"
+if [ -d "${qt_plugin_dir}/multimedia" ]; then
+    mkdir -p "${app_dir}/usr/plugins/multimedia"
+    for so in "${qt_plugin_dir}/multimedia/"*.so; do
+        [ -f "${so}" ] || continue
+        cp -a "${so}" "${app_dir}/usr/plugins/multimedia/"
+        copy_library_dependency "${app_dir}/usr/plugins/multimedia/$(basename "${so}")"
+    done
+    echo "Bundled Qt multimedia plugins: $(ls "${app_dir}/usr/plugins/multimedia/" 2>/dev/null | tr '\n' ' ')"
+else
+    echo "WARNING: Qt multimedia plugin directory not found at ${qt_plugin_dir}/multimedia" >&2
+fi
 
 # --- GStreamer plugins for OGG playback ---
 gst_dir="/usr/lib/x86_64-linux-gnu/gstreamer-1.0"
