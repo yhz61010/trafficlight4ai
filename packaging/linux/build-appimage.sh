@@ -130,7 +130,7 @@ if [ -d "${gst_dir}" ]; then
     mkdir -p "${gst_target}"
     for plugin in libgstcoreelements libgsttypefindfunctions libgstplayback \
                   libgstogg libgstvorbis libgstaudioconvert libgstaudioresample \
-                  libgstpulseaudio libgstalsa; do
+                  libgstvolume libgstautodetect libgstgio libgstpulseaudio libgstalsa; do
         if [ -f "${gst_dir}/${plugin}.so" ]; then
             cp -a "${gst_dir}/${plugin}.so" "${gst_target}/"
             copy_library_dependency "${gst_target}/${plugin}.so"
@@ -139,20 +139,42 @@ if [ -d "${gst_dir}" ]; then
     echo "Bundled GStreamer plugins: $(ls "${gst_target}" 2>/dev/null | tr '\n' ' ')"
 fi
 
-export OUTPUT="${output_dir}/${package}-${version}-linux-amd64.AppImage"
+gst_scanner="/usr/lib/x86_64-linux-gnu/gstreamer1.0/gstreamer-1.0/gst-plugin-scanner"
+if [ -x "${gst_scanner}" ]; then
+    gst_scanner_target="${app_dir}/usr/libexec/gstreamer-1.0"
+    mkdir -p "${gst_scanner_target}"
+    cp -a "${gst_scanner}" "${gst_scanner_target}/"
+    copy_library_dependency "${gst_scanner_target}/gst-plugin-scanner"
+fi
+
 "${linuxdeploy}" \
     --appdir "${app_dir}" \
     --executable "${app_dir}/usr/bin/${package}" \
     --executable "${app_dir}/usr/bin/tl4ai-ctl" \
     --desktop-file "${app_dir}/usr/share/applications/${package}.desktop" \
     --icon-file "${app_dir}/usr/share/pixmaps/${package}.png" \
-    --plugin qt \
+    --plugin qt
+
+if [ -d "${app_dir}/usr/lib/gstreamer-1.0" ]; then
+    find "${app_dir}/usr/lib/gstreamer-1.0" -name '*.so' \
+        -exec patchelf --set-rpath '$ORIGIN:$ORIGIN/..' {} \;
+fi
+if [ -x "${app_dir}/usr/libexec/gstreamer-1.0/gst-plugin-scanner" ]; then
+    patchelf --set-rpath '$ORIGIN/../../lib:$ORIGIN' \
+        "${app_dir}/usr/libexec/gstreamer-1.0/gst-plugin-scanner"
+fi
+
+export OUTPUT="${output_dir}/${package}-${version}-linux-amd64.AppImage"
+export LDAI_OUTPUT="${OUTPUT}"
+"${linuxdeploy}" \
+    --appdir "${app_dir}" \
     --output appimage
 
 # --- Post-build verification ---
 echo "=== Verifying AppImage contents ==="
 qt_multimedia_dir="${app_dir}/usr/plugins/multimedia"
 gst_plugins_dir="${app_dir}/usr/lib/gstreamer-1.0"
+gst_scanner_path="${app_dir}/usr/libexec/gstreamer-1.0/gst-plugin-scanner"
 if [ -d "${qt_multimedia_dir}" ] && [ -n "$(find "${qt_multimedia_dir}" -maxdepth 1 -name '*.so' -print -quit)" ]; then
     echo "Qt multimedia plugins: $(ls "${qt_multimedia_dir}")"
 else
@@ -164,8 +186,20 @@ if [ ! -d "${gst_plugins_dir}" ] || [ -z "$(find "${gst_plugins_dir}" -maxdepth 
     exit 1
 fi
 echo "GStreamer plugins: $(ls "${gst_plugins_dir}")"
+for required_plugin in libgstcoreelements.so libgsttypefindfunctions.so libgstplayback.so \
+                       libgstogg.so libgstvorbis.so libgstaudioconvert.so \
+                       libgstaudioresample.so libgstvolume.so libgstautodetect.so; do
+    if [ ! -f "${gst_plugins_dir}/${required_plugin}" ]; then
+        echo "FATAL: missing required GStreamer plugin ${required_plugin}" >&2
+        exit 1
+    fi
+done
+if [ ! -x "${gst_scanner_path}" ]; then
+    echo "FATAL: missing bundled GStreamer plugin scanner" >&2
+    exit 1
+fi
 
-dep_dirs=("${gst_plugins_dir}")
+dep_dirs=("${gst_plugins_dir}" "${gst_scanner_path}")
 if [ -d "${qt_multimedia_dir}" ]; then
     dep_dirs+=("${qt_multimedia_dir}")
 fi

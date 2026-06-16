@@ -189,11 +189,18 @@ jobs:
           (cd "${tmpdir}" && APPIMAGE_EXTRACT_AND_RUN=1 "${GITHUB_WORKSPACE}/${appimage}" --appimage-extract >/dev/null)
           qt_multimedia_dir="${tmpdir}/squashfs-root/usr/plugins/multimedia"
           gst_plugins_dir="${tmpdir}/squashfs-root/usr/lib/gstreamer-1.0"
+          gst_scanner="${tmpdir}/squashfs-root/usr/libexec/gstreamer-1.0/gst-plugin-scanner"
           if [ -d "${qt_multimedia_dir}" ]; then
             test -n "$(find "${qt_multimedia_dir}" -name '*.so' -print -quit)"
           fi
           test -n "$(find "${gst_plugins_dir}" -name '*.so' -print -quit)"
-          dep_dirs=("${gst_plugins_dir}")
+          for required_plugin in libgstcoreelements.so libgsttypefindfunctions.so libgstplayback.so \
+                                 libgstogg.so libgstvorbis.so libgstaudioconvert.so \
+                                 libgstaudioresample.so libgstvolume.so libgstautodetect.so; do
+            test -f "${gst_plugins_dir}/${required_plugin}"
+          done
+          test -x "${gst_scanner}"
+          dep_dirs=("${gst_plugins_dir}" "${gst_scanner}")
           if [ -d "${qt_multimedia_dir}" ]; then
             dep_dirs+=("${qt_multimedia_dir}")
           fi

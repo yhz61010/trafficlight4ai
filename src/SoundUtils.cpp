@@ -11,16 +11,9 @@
 
 namespace {
 
-void prependEnvPath(const char *name, const QByteArray &path)
+void setEnvPath(const char *name, const QByteArray &path)
 {
-    QByteArray current = qgetenv(name);
-    if (current.split(':').contains(path))
-        return;
-
-    if (current.isEmpty())
-        qputenv(name, path);
-    else
-        qputenv(name, path + ':' + current);
+    qputenv(name, path);
 }
 
 }
@@ -37,8 +30,21 @@ void initBundledGStreamerPlugins()
         return;
 
     const QString pluginDir = QString::fromLocal8Bit(appDir) + "/usr/lib/gstreamer-1.0";
-    if (QDir(pluginDir).exists())
-        prependEnvPath("GST_PLUGIN_PATH", QFile::encodeName(pluginDir));
+    if (!QDir(pluginDir).exists())
+        return;
+
+    const QByteArray encodedPluginDir = QFile::encodeName(pluginDir);
+    setEnvPath("GST_PLUGIN_PATH", encodedPluginDir);
+    setEnvPath("GST_PLUGIN_PATH_1_0", encodedPluginDir);
+    qputenv("GST_PLUGIN_SYSTEM_PATH_1_0", QByteArray());
+
+    const QString scanner = QString::fromLocal8Bit(appDir)
+        + "/usr/libexec/gstreamer-1.0/gst-plugin-scanner";
+    if (QFile::exists(scanner))
+        qputenv("GST_PLUGIN_SCANNER", QFile::encodeName(scanner));
+
+    const QString registry = QDir::tempPath() + "/trafficlight4ai-gst-registry.bin";
+    qputenv("GST_REGISTRY_1_0", QFile::encodeName(registry));
 }
 
 QUrl soundUrlForPath(const QString &filePath)
