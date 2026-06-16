@@ -197,7 +197,7 @@ jobs:
           for required_plugin in libgstcoreelements.so libgsttypefindfunctions.so libgstplayback.so \
                                  libgstogg.so libgstvorbis.so libgstaudioconvert.so \
                                  libgstaudioresample.so libgstvolume.so libgstautodetect.so \
-                                 libgstapp.so libgstvideoconvertscale.so; do
+                                 libgstapp.so libgstvideoconvert.so; do
             test -f "${gst_plugins_dir}/${required_plugin}"
           done
           test -x "${gst_scanner}"
