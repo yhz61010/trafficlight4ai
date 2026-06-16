@@ -26,14 +26,14 @@ AI 工具的 hook 机制在合适的时机触发 `tl4ai-ctl red/yellow/green`，
 
 预编译包可从 GitHub Releases 下载：
 
-- [`trafficlight4ai-1.1.1-windows-amd64.zip`](https://github.com/yhz61010/trafficlight4ai/releases/download/v1.1.1/trafficlight4ai-1.1.1-windows-amd64.zip) — Windows 构建，已通过 `windeployqt` 打包 Qt 运行库。
-- [`trafficlight4ai-1.1.1-linux-amd64.deb`](https://github.com/yhz61010/trafficlight4ai/releases/download/v1.1.1/trafficlight4ai-1.1.1-linux-amd64.deb) — Ubuntu/Debian 安装包。
-- [`trafficlight4ai-1.1.1-fedora-amd64.rpm`](https://github.com/yhz61010/trafficlight4ai/releases/download/v1.1.1/trafficlight4ai-1.1.1-fedora-amd64.rpm) — Fedora 安装包。
-- [`trafficlight4ai-1.1.1-opensuse-amd64.rpm`](https://github.com/yhz61010/trafficlight4ai/releases/download/v1.1.1/trafficlight4ai-1.1.1-opensuse-amd64.rpm) — openSUSE Leap 安装包。
-- [`trafficlight4ai-1.1.1-arch-amd64.pkg.tar.zst`](https://github.com/yhz61010/trafficlight4ai/releases/download/v1.1.1/trafficlight4ai-1.1.1-arch-amd64.pkg.tar.zst) — Arch Linux 安装包。
-- [`trafficlight4ai-1.1.1-linux-amd64.AppImage`](https://github.com/yhz61010/trafficlight4ai/releases/download/v1.1.1/trafficlight4ai-1.1.1-linux-amd64.AppImage) — 通用 Linux AppImage。
-- [`trafficlight4ai-1.1.1-macos-arm64.zip`](https://github.com/yhz61010/trafficlight4ai/releases/download/v1.1.1/trafficlight4ai-1.1.1-macos-arm64.zip) — macOS arm64 应用包，含 Qt frameworks。
-- [`SHA256SUMS.txt`](https://github.com/yhz61010/trafficlight4ai/releases/download/v1.1.1/SHA256SUMS.txt) — 发布包校验和。
+- [`trafficlight4ai-1.2.0-windows-amd64.zip`](https://github.com/yhz61010/trafficlight4ai/releases/download/v1.2.0/trafficlight4ai-1.2.0-windows-amd64.zip) — Windows 构建，已通过 `windeployqt` 打包 Qt 运行库。
+- [`trafficlight4ai-1.2.0-linux-amd64.deb`](https://github.com/yhz61010/trafficlight4ai/releases/download/v1.2.0/trafficlight4ai-1.2.0-linux-amd64.deb) — Ubuntu/Debian 安装包。
+- [`trafficlight4ai-1.2.0-fedora-amd64.rpm`](https://github.com/yhz61010/trafficlight4ai/releases/download/v1.2.0/trafficlight4ai-1.2.0-fedora-amd64.rpm) — Fedora 安装包。
+- [`trafficlight4ai-1.2.0-opensuse-amd64.rpm`](https://github.com/yhz61010/trafficlight4ai/releases/download/v1.2.0/trafficlight4ai-1.2.0-opensuse-amd64.rpm) — openSUSE Leap 安装包。
+- [`trafficlight4ai-1.2.0-arch-amd64.pkg.tar.zst`](https://github.com/yhz61010/trafficlight4ai/releases/download/v1.2.0/trafficlight4ai-1.2.0-arch-amd64.pkg.tar.zst) — Arch Linux 安装包。
+- [`trafficlight4ai-1.2.0-linux-amd64.AppImage`](https://github.com/yhz61010/trafficlight4ai/releases/download/v1.2.0/trafficlight4ai-1.2.0-linux-amd64.AppImage) — 通用 Linux AppImage。
+- [`trafficlight4ai-1.2.0-macos-arm64.zip`](https://github.com/yhz61010/trafficlight4ai/releases/download/v1.2.0/trafficlight4ai-1.2.0-macos-arm64.zip) — macOS arm64 应用包，含 Qt frameworks。
+- [`SHA256SUMS.txt`](https://github.com/yhz61010/trafficlight4ai/releases/download/v1.2.0/SHA256SUMS.txt) — 发布包校验和。
 
 Linux 发行版安装包是动态链接构建，主要面向对应发行版家族。其它发行版可优先使用 AppImage，或按 [docs/BUILD_zh.md](docs/BUILD_zh.md) 从源码编译。macOS（最低 macOS 12）发布包已在 Release workflow 中支持，会从 macOS 支持合入后的新版本开始生成。
 
