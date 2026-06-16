@@ -1,11 +1,45 @@
 #include "SoundUtils.h"
 #include <QApplication>
+#include <QDir>
 #include <QFile>
 #include <QMediaPlayer>
 #include <QAudioOutput>
 #include <QMessageBox>
 #include <QPointer>
+#include <QSharedPointer>
 #include <QUrl>
+
+namespace {
+
+void prependEnvPath(const char *name, const QByteArray &path)
+{
+    QByteArray current = qgetenv(name);
+    if (current.split(':').contains(path))
+        return;
+
+    if (current.isEmpty())
+        qputenv(name, path);
+    else
+        qputenv(name, path + ':' + current);
+}
+
+void ensureBundledGStreamerPluginsVisible()
+{
+    static const bool initialized = [] {
+        const QByteArray appDir = qgetenv("APPDIR");
+        if (appDir.isEmpty())
+            return true;
+
+        const QString pluginDir = QString::fromLocal8Bit(appDir) + "/usr/lib/gstreamer-1.0";
+        if (QDir(pluginDir).exists())
+            prependEnvPath("GST_PLUGIN_PATH", QFile::encodeName(pluginDir));
+
+        return true;
+    }();
+    Q_UNUSED(initialized);
+}
+
+}
 
 QUrl soundUrlForPath(const QString &filePath)
 {
@@ -25,15 +59,15 @@ void playSound(const QString &filePath, QObject *errorContext)
 {
     const QUrl url = soundUrlForPath(filePath);
     if (url.isValid()) {
+        ensureBundledGStreamerPluginsVisible();
+
         auto *player = new QMediaPlayer();
         auto *audioOutput = new QAudioOutput(player);
         player->setAudioOutput(audioOutput);
         player->setSource(url);
 
-        auto *cleaned = new bool(false);
-        QObject::connect(player, &QObject::destroyed, player, [cleaned]() { delete cleaned; });
-
         QPointer<QObject> ctx(errorContext);
+        auto cleaned = QSharedPointer<bool>::create(false);
 
         auto cleanup = [player, cleaned]() {
             if (*cleaned)

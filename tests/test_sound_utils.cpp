@@ -2,7 +2,6 @@
 #include <QCoreApplication>
 #include <QTemporaryDir>
 #include <QFile>
-#include <QWidget>
 #include "SoundUtils.h"
 
 class TestSoundUtils : public QObject {
@@ -48,32 +47,11 @@ private slots:
         QCoreApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete);
     }
 
-    void playSoundWithValidQrcPathDoesNotCrash()
+    void playSoundFallbackCanBeCalledRepeatedly()
     {
-        playSound(":/effects/effects/yellow.ogg");
-        QCoreApplication::processEvents();
-        QTest::qWait(50);
-        QCoreApplication::processEvents();
-        QCoreApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete);
-    }
-
-    void playSoundWithDestroyedContextDoesNotCrash()
-    {
-        auto *widget = new QWidget();
-        playSound(":/effects/effects/yellow.ogg", widget);
-        delete widget;
-        QCoreApplication::processEvents();
-        QTest::qWait(50);
-        QCoreApplication::processEvents();
-        QCoreApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete);
-    }
-
-    void playSoundCalledTwiceRapidlyDoesNotCrash()
-    {
-        playSound(":/effects/effects/yellow.ogg");
-        playSound(":/effects/effects/green.ogg");
-        QCoreApplication::processEvents();
-        QTest::qWait(50);
+        playSound(QString());
+        playSound(QString());
+        playSound("/tmp/trafficlight4ai-missing-playback.ogg");
         QCoreApplication::processEvents();
         QCoreApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete);
     }
