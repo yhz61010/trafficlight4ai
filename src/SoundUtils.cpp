@@ -23,22 +23,22 @@ void prependEnvPath(const char *name, const QByteArray &path)
         qputenv(name, path + ':' + current);
 }
 
-void ensureBundledGStreamerPluginsVisible()
-{
-    static const bool initialized = [] {
-        const QByteArray appDir = qgetenv("APPDIR");
-        if (appDir.isEmpty())
-            return true;
-
-        const QString pluginDir = QString::fromLocal8Bit(appDir) + "/usr/lib/gstreamer-1.0";
-        if (QDir(pluginDir).exists())
-            prependEnvPath("GST_PLUGIN_PATH", QFile::encodeName(pluginDir));
-
-        return true;
-    }();
-    Q_UNUSED(initialized);
 }
 
+void initBundledGStreamerPlugins()
+{
+    static bool initialized = false;
+    if (initialized)
+        return;
+    initialized = true;
+
+    const QByteArray appDir = qgetenv("APPDIR");
+    if (appDir.isEmpty())
+        return;
+
+    const QString pluginDir = QString::fromLocal8Bit(appDir) + "/usr/lib/gstreamer-1.0";
+    if (QDir(pluginDir).exists())
+        prependEnvPath("GST_PLUGIN_PATH", QFile::encodeName(pluginDir));
 }
 
 QUrl soundUrlForPath(const QString &filePath)
@@ -59,8 +59,6 @@ void playSound(const QString &filePath, QObject *errorContext)
 {
     const QUrl url = soundUrlForPath(filePath);
     if (url.isValid()) {
-        ensureBundledGStreamerPluginsVisible();
-
         auto *player = new QMediaPlayer();
         auto *audioOutput = new QAudioOutput(player);
         player->setAudioOutput(audioOutput);

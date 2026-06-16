@@ -9,3 +9,4 @@ inline constexpr char kDefaultGreenSound[] = ":/effects/effects/green.ogg";
 
 QUrl soundUrlForPath(const QString &filePath);
 void playSound(const QString &filePath, QObject *errorContext = nullptr);
+void initBundledGStreamerPlugins();

@@ -45,6 +45,8 @@ int main(int argc, char *argv[])
     app.setApplicationName("trafficlight4ai");
     app.setQuitOnLastWindowClosed(false); // keep running in tray
 
+    initBundledGStreamerPlugins();
+
     // Core
     ConfigManager config(defaultConfigPath());
     StateManager stateManager;
