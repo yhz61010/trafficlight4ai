@@ -60,6 +60,8 @@ Linux 默认路径：`$XDG_RUNTIME_DIR/trafficlight4ai.sock`（fallback `/tmp/tr
 
 `tl4ai-ctl` 在 Linux 上启动时会非阻塞 drain stdin（AI 工具 hooks 会往 stdin 写 JSON 数据），Windows 上跳过。
 
+AppImage：GUI 主程序 `trafficlight4ai` 也接受 `red`/`yellow`/`green` 参数（CLI 模式经 IPC 转发后退出、不启 GUI，因为 AppRun 执行的就是 GUI 二进制）。推荐 Hooks 用稳定的 `$APPIMAGE` 路径（由 `resolvedCtlPath()` 处理），勿用临时 `/tmp/.mount_*` 路径。客户端 socket/发送逻辑共享于 `Tl4aiClient`（tl4ai_core）。
+
 配置文件路径：`~/.config/trafficlight4ai/config.json`，字段说明见 README.md 的 Configuration 章节。
 
 ### AI 工具策略模式
@@ -94,6 +96,8 @@ Linux 默认路径：`$XDG_RUNTIME_DIR/trafficlight4ai.sock`（fallback `/tmp/tr
 - 发布新 Release 后，同步更新 README.md、README_zh.md 中的版本号和下载链接（BUILD 文档已用 `<version>` 占位符，无需更新）
 - 更新 README.md 时必须同步更新 README_zh.md，保持双语内容一致
 - 修改外迁文档（`docs/PROJECT_STRUCTURE.md`、`docs/KNOWN_ISSUES.md`）时需与代码实际状态保持一致
+- `AiToolStrategy.h` 的 hooks 模板是 JSON：含空格的命令路径必须 JSON 转义为 `\"...\"`，不能用裸引号，否则生成非法 JSON
+- 通过 workflow_dispatch 触发 `release-packages.yml` 时，`notes` 输入严禁含反引号（会被内联进 bash 当命令替换，导致构建失败）
 
 ## 外部文档路径
 
