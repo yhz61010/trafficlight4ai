@@ -1,6 +1,6 @@
 # 配置 AI 工具的 Hooks
 
-以下示例使用短名 `tl4ai-ctl`。如果你将 trafficlight4ai 安装到了自定义位置，请替换为完整路径。
+以下示例使用短名 `tl4ai-ctl`。如果你将 trafficlight4ai 安装到了自定义位置，请替换为完整路径。AppImage 场景请使用设置对话框显示的真实 `.AppImage` 路径（例如 `/path/to/trafficlight4ai-<version>-linux-amd64.AppImage red`），不要保存临时的 `/tmp/.mount_*` 路径——它每次启动都会变化。
 
 也可以在设置对话框中点击"查看推荐 Hooks 配置"按钮获取模板，或点击"编辑 Hooks 配置"按钮直接编辑。
 

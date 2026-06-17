@@ -4,7 +4,9 @@
 #include <QDir>
 #include <QList>
 #include <QFile>
+#include <QFileInfo>
 #include <QCoreApplication>
+#include <QtGlobal>
 #include <memory>
 
 class AiToolStrategy {
@@ -210,9 +212,43 @@ public:
         return nullptr;
     }
 
-    static QString resolvedCtlPath()
+    // Quote a path for embedding inside a JSON string value. The templates are
+    // JSON, so a space-containing path must be wrapped in JSON-escaped quotes
+    // (\"...\") to stay valid both when displayed and when parsed/re-serialized.
+    static QString quoteCommandPath(const QString &path)
     {
-        const QString dir = QCoreApplication::applicationDirPath();
+        return path.contains(' ')
+            ? (QStringLiteral("\\\"") + path + QStringLiteral("\\\""))
+            : path;
+    }
+
+    // AppImage mounts the bundled tl4ai-ctl under a transient /tmp/.mount_* path
+    // that changes every run, so it must never be written into a saved hook.
+    static bool isTransientAppImageDir(const QString &dir)
+    {
+#ifdef Q_OS_WIN
+        Q_UNUSED(dir)
+        return false;
+#else
+        const QString cleanDir = QDir::cleanPath(dir);
+        return cleanDir.contains(QLatin1String("/.mount_"));
+#endif
+    }
+
+    // Resolve the command path for hook templates. Split out for testability.
+    // Priority: stable .AppImage path (when running as AppImage) > tl4ai-ctl
+    // next to the executable > bare `tl4ai-ctl` (rely on PATH).
+    static QString resolvedCtlPathForDir(const QString &dir,
+                                         const QString &appImagePath = QString())
+    {
+#ifndef Q_OS_WIN
+        if (!appImagePath.isEmpty() && QFile::exists(appImagePath))
+            return quoteCommandPath(QFileInfo(appImagePath).absoluteFilePath());
+#else
+        Q_UNUSED(appImagePath)
+#endif
+        if (isTransientAppImageDir(dir))
+            return QString("tl4ai-ctl");
 #ifdef Q_OS_WIN
         const QString path = dir + "/tl4ai-ctl.exe";
 #else
@@ -220,7 +256,13 @@ public:
 #endif
         if (!QFile::exists(path))
             return QString("tl4ai-ctl");
-        return path.contains(' ') ? ('"' + path + '"') : path;
+        return quoteCommandPath(path);
+    }
+
+    static QString resolvedCtlPath()
+    {
+        const QString dir = QCoreApplication::applicationDirPath();
+        return resolvedCtlPathForDir(dir, QString::fromLocal8Bit(qgetenv("APPIMAGE")));
     }
 
     static QString resolvedTemplate(const AiToolStrategy *strategy)

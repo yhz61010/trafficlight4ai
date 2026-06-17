@@ -1,6 +1,6 @@
 # Configure Hooks for Your AI Tool
 
-The examples below use the short name `tl4ai-ctl`. If you installed trafficlight4ai to a custom location, replace it with the full path.
+The examples below use the short name `tl4ai-ctl`. If you installed trafficlight4ai to a custom location, replace it with the full path. For the AppImage, use the real `.AppImage` path shown by the Settings dialog (e.g. `/path/to/trafficlight4ai-<version>-linux-amd64.AppImage red`); do not save the temporary `/tmp/.mount_*` path, which changes on every launch.
 
 You can also view these templates in the Settings dialog ("View Recommended Hooks Config" button) or edit them directly ("Edit Hooks Config" button).
 

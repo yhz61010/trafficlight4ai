@@ -1,5 +1,8 @@
 #include <QtTest>
 #include <QRegularExpression>
+#include <QDir>
+#include <QFile>
+#include <QTemporaryDir>
 #include "AiToolStrategy.h"
 
 class TestAiToolStrategy : public QObject {
@@ -379,6 +382,51 @@ private slots:
     {
         QCOMPARE(AiToolRegistry::strategies().size(), 5);
     }
+
+#ifndef Q_OS_WIN
+    // AppImage path resolution (Linux-only concept).
+    void resolvedCtlPathUsesAppImageExecutable()
+    {
+        QTemporaryDir dir;
+        QVERIFY(dir.isValid());
+        const QString appImagePath = dir.path() + "/trafficlight4ai.AppImage";
+        QFile appImage(appImagePath);
+        QVERIFY(appImage.open(QIODevice::WriteOnly));
+        appImage.close();
+
+        // Even when the executable lives in a transient /tmp/.mount_* dir, the
+        // stable .AppImage path wins.
+        QCOMPARE(AiToolRegistry::resolvedCtlPathForDir("/tmp/.mount_tl4ai/usr/bin", appImagePath),
+                 appImagePath);
+    }
+
+    void resolvedCtlPathEscapesAppImagePathWithSpaces()
+    {
+        QTemporaryDir dir(QDir::tempPath() + "/tl4ai path with spaces_XXXXXX");
+        QVERIFY(dir.isValid());
+        const QString appImagePath = dir.path() + "/trafficlight4ai.AppImage";
+        QFile appImage(appImagePath);
+        QVERIFY(appImage.open(QIODevice::WriteOnly));
+        appImage.close();
+
+        QCOMPARE(AiToolRegistry::resolvedCtlPathForDir("/tmp/.mount_tl4ai/usr/bin", appImagePath),
+                 QString("\\\"") + appImagePath + "\\\"");
+    }
+
+    void resolvedCtlPathIgnoresTransientAppImageMount()
+    {
+        QTemporaryDir mountDir(QDir::tempPath() + "/.mount_tl4ai_XXXXXX");
+        QVERIFY(mountDir.isValid());
+        const QString binDir = mountDir.path() + "/usr/bin";
+        QVERIFY(QDir().mkpath(binDir));
+        QFile ctl(binDir + "/tl4ai-ctl");
+        QVERIFY(ctl.open(QIODevice::WriteOnly));
+        ctl.close();
+
+        // The transient mount's tl4ai-ctl must not be baked into a saved hook.
+        QCOMPARE(AiToolRegistry::resolvedCtlPathForDir(binDir), QString("tl4ai-ctl"));
+    }
+#endif
 };
 
 QTEST_MAIN(TestAiToolStrategy)

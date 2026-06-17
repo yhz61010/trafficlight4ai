@@ -15,6 +15,7 @@ trafficlight4ai/
 │   ├── StateManager.h/cpp         # 状态机（纯逻辑，含超时机制）
 │   ├── ConfigManager.h/cpp        # JSON 配置管理
 │   ├── IpcServer.h/cpp            # QLocalServer 本地 IPC 服务端
+│   ├── Tl4aiClient.h/cpp          # 共享 IPC 客户端（socket 路径解析 + 发送，供 tl4ai-ctl 与 GUI CLI 复用）
 │   ├── AiToolStrategy.h           # AI 工具策略接口 + Registry
 │   ├── TrafficLightWidget.h/cpp   # 红绿灯绘制控件
 │   ├── FloatingWindow.h/cpp       # 可拖动悬浮窗口
@@ -51,6 +52,7 @@ trafficlight4ai/
 | `StateManager` | 状态机（Working/WaitingConfirm/Idle），超时自动回 Idle | Qt Core |
 | `ConfigManager` | JSON 配置读写（`~/.config/trafficlight4ai/config.json`） | Qt Core |
 | `IpcServer` | QLocalServer 监听本地 IPC socket，解析指令转发给 StateManager | Qt Network |
+| `Tl4aiClient` | 共享 IPC 客户端：默认 socket 路径解析、stdin drain、发送状态指令，供 tl4ai-ctl CLI 与 GUI 的 AppImage CLI 转发模式复用 | Qt Network |
 | `AiToolStrategy` | 策略接口，封装各 AI 工具的差异（hooks 模板、默认超时等） | 无 |
 | `TrafficLightWidget` | 自定义 QWidget，绘制三灯 UI，支持呼吸灯/经典闪烁 | Qt Widgets |
 | `FloatingWindow` | 无边框置顶窗口，可拖动，记忆位置 | Qt Widgets |

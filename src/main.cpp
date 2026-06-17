@@ -1,7 +1,10 @@
 #include <QApplication>
+#include <QCoreApplication>
 #include <QDir>
 #include <QStandardPaths>
+#include <QString>
 #include <QTranslator>
+#include "Tl4aiClient.h"
 #include "StateManager.h"
 #include "ConfigManager.h"
 #include "IpcServer.h"
@@ -41,6 +44,17 @@ static void loadLanguage(QApplication &app, const QString &lang)
 
 int main(int argc, char *argv[])
 {
+    // Lightweight CLI-forwarding mode. The AppImage's AppRun launches this GUI
+    // binary, so accepting the state words here lets hooks target the stable
+    // .AppImage path (e.g. `foo.AppImage red`) instead of the transient mount
+    // path of the bundled tl4ai-ctl. Shares the send logic with tl4ai-ctl.
+    if (argc >= 2 && Tl4aiClient::isStateCommand(QString::fromLocal8Bit(argv[1]))) {
+        Tl4aiClient::drainStdin();
+        QCoreApplication app(argc, argv);
+        app.setApplicationName("trafficlight4ai");
+        return Tl4aiClient::sendState(QString::fromLocal8Bit(argv[1]));
+    }
+
     QApplication app(argc, argv);
     app.setApplicationName("trafficlight4ai");
     app.setQuitOnLastWindowClosed(false); // keep running in tray
