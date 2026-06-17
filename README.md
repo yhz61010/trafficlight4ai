@@ -93,6 +93,12 @@ sudo ln -s "$(pwd)/build/tools/tl4ai-ctl" /usr/local/bin/tl4ai-ctl
 cp build/tools/tl4ai-ctl ~/.local/bin/
 ```
 
+**Option C** — AppImage: use the real `.AppImage` path with the state word directly. The bundled `tl4ai-ctl` lives in a temporary mount (`/tmp/.mount_*`) that changes on every launch, so never reference it in a saved hook. Replace `tl4ai-ctl` with the AppImage path shown by the Settings dialog, e.g.:
+
+```
+/home/you/Downloads/trafficlight4ai-1.2.0-linux-amd64.AppImage red
+```
+
 ### 3. Configure hooks for your AI tool
 
 See [docs/HOOKS.md](docs/HOOKS.md) for hooks configuration examples for each supported AI tool (Codex, Claude Code, Qoder CN, Copilot, Gemini). You can also view and edit these templates directly in the Settings dialog.

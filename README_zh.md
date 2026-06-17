@@ -93,6 +93,12 @@ sudo ln -s "$(pwd)/build/tools/tl4ai-ctl" /usr/local/bin/tl4ai-ctl
 cp build/tools/tl4ai-ctl ~/.local/bin/
 ```
 
+**方式 C** — AppImage：直接用真实 `.AppImage` 路径加状态词。包内的 `tl4ai-ctl` 位于临时挂载点（`/tmp/.mount_*`），每次启动都会变化，切勿在保存的 hook 中引用它。把第 3 步配置中的 `tl4ai-ctl` 替换为设置对话框显示的 AppImage 路径，例如：
+
+```
+/home/you/Downloads/trafficlight4ai-1.2.0-linux-amd64.AppImage red
+```
+
 ### 3. 配置 AI 工具的 hooks
 
 各 AI 工具（Codex、Claude Code、Qoder CN、Copilot、Gemini）的 hooks 配置示例请参阅 [docs/HOOKS_zh.md](docs/HOOKS_zh.md)。也可以在设置对话框中直接查看和编辑模板。
