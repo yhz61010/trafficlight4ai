@@ -12,6 +12,7 @@
 
 static const QStringList kValidSizes = {"xsmall", "small", "medium", "large", "xlarge"};
 static const QStringList kValidModes = {"breathing", "classic"};
+static const QStringList kValidLogLevels = {"verb", "debug", "info", "warn", "error"};
 static const QString kLegacyDefaultSocketPath = "/tmp/trafficlight4ai.sock";
 
 static QString defaultSocketPath()
@@ -67,10 +68,15 @@ void ConfigManager::applyDefaults()
     sound["yellowFile"] = QString();
     sound["greenFile"] = QString();
 
+    QJsonObject logging;
+    logging["enabled"] = true;
+    logging["level"] = "warn";
+
     m_root["window"] = window;
     m_root["animation"] = animation;
     m_root["socket"] = socket;
     m_root["sound"] = sound;
+    m_root["logging"] = logging;
     m_root["aiTool"] = "codex";
     m_root["timeoutSec"] = 300;
     m_root["language"] = "en";
@@ -299,6 +305,34 @@ void ConfigManager::setGreenSoundFile(const QString &path)
     save();
 }
 
+bool ConfigManager::loggingEnabled() const
+{
+    return m_root["logging"].toObject()["enabled"].toBool(true);
+}
+
+void ConfigManager::setLoggingEnabled(bool enabled)
+{
+    QJsonObject logging = m_root["logging"].toObject();
+    logging["enabled"] = enabled;
+    m_root["logging"] = logging;
+    save();
+}
+
+QString ConfigManager::logLevel() const
+{
+    return m_root["logging"].toObject()["level"].toString("warn");
+}
+
+void ConfigManager::setLogLevel(const QString &level)
+{
+    if (!kValidLogLevels.contains(level))
+        return;
+    QJsonObject logging = m_root["logging"].toObject();
+    logging["level"] = level;
+    m_root["logging"] = logging;
+    save();
+}
+
 void ConfigManager::beginBatchSave()
 {
     m_batchSave = true;
@@ -341,6 +375,12 @@ void ConfigManager::normalize()
         || (socketPath == kLegacyDefaultSocketPath && qgetenv("TL4AI_SOCKET").isEmpty()))
         socket["path"] = defaultSocketPath();
     m_root["socket"] = socket;
+
+    // Validate logging.level
+    QJsonObject logging = m_root["logging"].toObject();
+    if (!kValidLogLevels.contains(logging["level"].toString()))
+        logging["level"] = "warn";
+    m_root["logging"] = logging;
 
     if (m_root != before)
         save();

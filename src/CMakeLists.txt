@@ -4,6 +4,7 @@ add_library(tl4ai_core STATIC
     ConfigManager.cpp
     IpcServer.cpp
     Tl4aiClient.cpp
+    Logger.cpp
 )
 target_include_directories(tl4ai_core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 target_link_libraries(tl4ai_core PUBLIC Qt6::Core Qt6::Network)

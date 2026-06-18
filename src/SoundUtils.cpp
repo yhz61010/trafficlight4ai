@@ -1,4 +1,5 @@
 #include "SoundUtils.h"
+#include "Logger.h"
 #include <QApplication>
 #include <QDir>
 #include <QFile>
@@ -65,6 +66,7 @@ void playSound(const QString &filePath, QObject *errorContext)
 {
     const QUrl url = soundUrlForPath(filePath);
     if (url.isValid()) {
+        TL_LOGI("Sound", QString("Playing sound: %1 (url=%2)").arg(filePath, url.toString()));
         auto *player = new QMediaPlayer();
         auto *audioOutput = new QAudioOutput(player);
         player->setAudioOutput(audioOutput);
@@ -82,7 +84,8 @@ void playSound(const QString &filePath, QObject *errorContext)
 
         QObject::connect(player, &QMediaPlayer::errorOccurred,
                          player, [cleanup, ctx, filePath]
-                         (QMediaPlayer::Error, const QString &) {
+                         (QMediaPlayer::Error, const QString &errorString) {
+            TL_LOGE("Sound", QString("Playback error for %1: %2").arg(filePath, errorString));
             QApplication::beep();
             if (ctx) {
                 auto *widget = qobject_cast<QWidget *>(ctx.data());
@@ -94,13 +97,16 @@ void playSound(const QString &filePath, QObject *errorContext)
         });
 
         QObject::connect(player, &QMediaPlayer::playbackStateChanged,
-                         player, [cleanup](QMediaPlayer::PlaybackState state) {
-            if (state == QMediaPlayer::StoppedState)
+                         player, [cleanup, filePath](QMediaPlayer::PlaybackState state) {
+            if (state == QMediaPlayer::StoppedState) {
+                TL_LOGV("Sound", QString("Playback stopped, cleaning up player for %1").arg(filePath));
                 cleanup();
+            }
         });
 
         player->play();
     } else {
+        TL_LOGW("Sound", QString("Invalid sound url for '%1', falling back to system beep").arg(filePath));
         QApplication::beep();
     }
 }

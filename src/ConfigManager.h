@@ -46,6 +46,11 @@ public:
     QString greenSoundFile() const;
     void setGreenSoundFile(const QString &path);
 
+    bool loggingEnabled() const;
+    void setLoggingEnabled(bool enabled);
+    QString logLevel() const;
+    void setLogLevel(const QString &level);
+
     void beginBatchSave();
     void endBatchSave();
 

@@ -48,6 +48,9 @@ private slots:
     void onPreviewGreenSound();
     void onBrowseYellowSound();
     void onBrowseGreenSound();
+    void onLogEnabledToggled(bool checked);
+    void onLogLevelChanged(int index);
+    void onOpenLogFolder();
     void updatePreviewButtons();
     void onShowHooksTemplate();
     void onEditHooksConfig();
@@ -81,6 +84,10 @@ private:
     QLineEdit *m_greenSoundEdit;
     QPushButton *m_greenPreviewBtn;
     QPushButton *m_greenBrowseBtn;
+    QCheckBox *m_logEnabledCheck;
+    QComboBox *m_logLevelCombo;
+    QLineEdit *m_logPathEdit;
+    QPushButton *m_logOpenBtn;
     QPushButton *m_hooksBtn;
     QPushButton *m_editHooksBtn;
     QPushButton *m_okBtn;
@@ -98,4 +105,6 @@ private:
     QString m_snapYellowSoundFile;
     bool m_snapGreenSoundEnabled;
     QString m_snapGreenSoundFile;
+    bool m_snapLogEnabled;
+    QString m_snapLogLevel;
 };

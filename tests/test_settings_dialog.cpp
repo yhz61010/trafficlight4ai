@@ -457,6 +457,82 @@ private slots:
         QCOMPARE(config.yellowSoundFile(), yellowPath);
         QCOMPARE(config.greenSoundFile(), greenPath);
     }
+
+    void showEventLoadsLoggingValues()
+    {
+        ConfigManager config(configPath());
+        config.setSocketPath(socketPath("settings_log_load"));
+        config.setLoggingEnabled(false);
+        config.setLogLevel("debug");
+
+        StateManager stateManager;
+        IpcServer ipcServer(&stateManager, config.socketPath());
+        TrafficLightWidget light;
+        SettingsDialog dialog(&config, &light, &ipcServer, &stateManager);
+        showAndProcess(dialog);
+
+        auto *logCheck = requireChild<QCheckBox>(&dialog, "logEnabledCheck");
+        auto *logLevel = requireChild<QComboBox>(&dialog, "logLevelCombo");
+        auto *logPath = requireChild<QLineEdit>(&dialog, "logPathEdit");
+
+        QCOMPARE(logCheck->isChecked(), false);
+        QCOMPARE(logLevel->currentData().toString(), QString("debug"));
+        QVERIFY(!logLevel->isEnabled()); // disabled because logging is off
+        QVERIFY(logPath->isReadOnly());
+        QVERIFY(!logPath->text().isEmpty());
+    }
+
+    void logControlsUpdateConfigImmediately()
+    {
+        ConfigManager config(configPath());
+        config.setSocketPath(socketPath("settings_log_update"));
+        config.setLoggingEnabled(true);
+        config.setLogLevel("warn");
+
+        StateManager stateManager;
+        IpcServer ipcServer(&stateManager, config.socketPath());
+        TrafficLightWidget light;
+        SettingsDialog dialog(&config, &light, &ipcServer, &stateManager);
+        showAndProcess(dialog);
+
+        auto *logCheck = requireChild<QCheckBox>(&dialog, "logEnabledCheck");
+        auto *logLevel = requireChild<QComboBox>(&dialog, "logLevelCombo");
+
+        logLevel->setCurrentIndex(indexForData(logLevel, "error"));
+        QCOMPARE(config.logLevel(), QString("error"));
+
+        logCheck->setChecked(false);
+        QCOMPARE(config.loggingEnabled(), false);
+        QVERIFY(!logLevel->isEnabled());
+
+        logCheck->setChecked(true);
+        QCOMPARE(config.loggingEnabled(), true);
+        QVERIFY(logLevel->isEnabled());
+    }
+
+    void rejectRestoresLoggingSettings()
+    {
+        ConfigManager config(configPath());
+        config.setSocketPath(socketPath("settings_log_reject"));
+        config.setLoggingEnabled(true);
+        config.setLogLevel("warn");
+
+        StateManager stateManager;
+        IpcServer ipcServer(&stateManager, config.socketPath());
+        TrafficLightWidget light;
+        SettingsDialog dialog(&config, &light, &ipcServer, &stateManager);
+        showAndProcess(dialog);
+
+        auto *logLevel = requireChild<QComboBox>(&dialog, "logLevelCombo");
+        logLevel->setCurrentIndex(indexForData(logLevel, "verb"));
+        requireChild<QCheckBox>(&dialog, "logEnabledCheck")->setChecked(false);
+
+        dialog.reject();
+        QApplication::processEvents();
+
+        QCOMPARE(config.loggingEnabled(), true);
+        QCOMPARE(config.logLevel(), QString("warn"));
+    }
 };
 
 QTEST_MAIN(TestSettingsDialog)

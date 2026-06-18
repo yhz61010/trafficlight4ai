@@ -153,6 +153,10 @@ tl4ai-ctl green    # 绿灯常亮
     "greenEnabled": true,
     "yellowFile": "",
     "greenFile": ""
+  },
+  "logging": {
+    "enabled": true,
+    "level": "warn"
   }
 }
 ```
@@ -171,6 +175,10 @@ tl4ai-ctl green    # 绿灯常亮
 | `socket.path` | 平台相关 | 见下方说明 |
 | `sound.yellowEnabled` / `greenEnabled` | `true` | 提示音开关 |
 | `sound.yellowFile` / `greenFile` | `""` | 自定义音效路径（WAV/MP3/OGG），空用系统 beep |
+| `logging.enabled` | `true` | 是否写入诊断日志文件（同时输出控制台） |
+| `logging.level` | `"warn"` | 最低级别：`verb` / `debug` / `info` / `warn` / `error` |
+
+日志文件位于 `<应用数据目录>/logs/trafficlight4ai.log`（Linux：`~/.local/share/trafficlight4ai/logs/`），约 5 MB 滚动并保留一个 `.1` 备份；设置对话框中会展示该路径并提供「打开目录」按钮。`verb` 为最详细级别，会记录每次呼吸灯透明度变化。
 
 默认 socket 路径因平台而异：Linux 使用 `$XDG_RUNTIME_DIR/trafficlight4ai.sock`（fallback `/tmp/trafficlight4ai-$UID.sock`），macOS 使用 `$TMPDIR/trafficlight4ai.sock`，Windows 使用命名管道 `trafficlight4ai`。也可通过 `TL4AI_SOCKET` 环境变量覆盖。
 

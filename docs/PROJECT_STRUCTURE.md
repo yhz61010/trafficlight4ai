@@ -16,6 +16,7 @@ trafficlight4ai/
 │   ├── ConfigManager.h/cpp        # JSON 配置管理
 │   ├── IpcServer.h/cpp            # QLocalServer 本地 IPC 服务端
 │   ├── Tl4aiClient.h/cpp          # 共享 IPC 客户端（socket 路径解析 + 发送，供 tl4ai-ctl 与 GUI CLI 复用）
+│   ├── Logger.h/cpp              # 集中式分级日志器（文件 + 控制台，大小滚动）
 │   ├── AiToolStrategy.h           # AI 工具策略接口 + Registry
 │   ├── TrafficLightWidget.h/cpp   # 红绿灯绘制控件
 │   ├── FloatingWindow.h/cpp       # 可拖动悬浮窗口
@@ -53,6 +54,7 @@ trafficlight4ai/
 | `ConfigManager` | JSON 配置读写（`~/.config/trafficlight4ai/config.json`） | Qt Core |
 | `IpcServer` | QLocalServer 监听本地 IPC socket，解析指令转发给 StateManager | Qt Network |
 | `Tl4aiClient` | 共享 IPC 客户端：默认 socket 路径解析、stdin drain、发送状态指令，供 tl4ai-ctl CLI 与 GUI 的 AppImage CLI 转发模式复用 | Qt Network |
+| `Logger` | 集中式分级日志器（VERB/DEBUG/INFO/WARN/ERROR），单例，写文件 + stderr，大小上限滚动，级别由 config 控制 | Qt Core |
 | `AiToolStrategy` | 策略接口，封装各 AI 工具的差异（hooks 模板、默认超时等） | 无 |
 | `TrafficLightWidget` | 自定义 QWidget，绘制三灯 UI，支持呼吸灯/经典闪烁 | Qt Widgets |
 | `FloatingWindow` | 无边框置顶窗口，可拖动，记忆位置 | Qt Widgets |
@@ -70,5 +72,6 @@ trafficlight4ai/
 | `test_config_manager` | 默认值、读写持久化、容错回退、参数校验、aiTool/timeoutSec |
 | `test_ipc_server` | socket 收发、无效指令、旧 socket 清理、restart |
 | `test_ai_tool_strategy` | 事件名验证、hooks 模板内容、Registry 查找、hooksConfigPath/hooksIsEntireFile |
+| `test_logger` | 级别字符串互转、级别过滤（shouldLog）、启用/禁用文件写入、运行时改级别 |
 | `test_traffic_light_widget` | sizePresetFromString 字符串到枚举转换（需 offscreen 平台） |
 | `test_tl4ai_ctl` | CLI 集成测试，需要编译后的 tl4ai-ctl 二进制 |

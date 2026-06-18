@@ -22,6 +22,10 @@
     <message><source>Socket Path:</source><translation>Socketパス:</translation></message>
     <message><source>Yellow Sound:</source><translation>黄色ライト音:</translation></message>
     <message><source>Green Sound:</source><translation>緑色ライト音:</translation></message>
+    <message><source>Logging:</source><translation>ログ:</translation></message>
+    <message><source>Log Level:</source><translation>ログレベル:</translation></message>
+    <message><source>Log File:</source><translation>ログファイル:</translation></message>
+    <message><source>Open Folder</source><translation>フォルダを開く</translation></message>
     <message><source>Enable</source><translation>有効</translation></message>
     <message><source>Leave empty for system beep</source><translation>空欄でシステムビープ音を使用</translation></message>
     <message><source>Preview</source><translation>試聴</translation></message>

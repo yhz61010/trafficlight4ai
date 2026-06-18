@@ -1,4 +1,17 @@
 #include "StateManager.h"
+#include "Logger.h"
+
+namespace {
+const char *lightStateName(LightState state)
+{
+    switch (state) {
+    case LightState::Working:        return "Working(RED)";
+    case LightState::WaitingConfirm: return "WaitingConfirm(YELLOW)";
+    case LightState::Idle:           return "Idle(GREEN)";
+    }
+    return "Unknown";
+}
+}
 
 StateManager::StateManager(QObject *parent)
     : QObject(parent)
@@ -15,10 +28,15 @@ LightState StateManager::state() const
 void StateManager::setState(LightState newState)
 {
     const bool changed = (m_state != newState);
+    const LightState oldState = m_state;
     m_state = newState;
 
-    if (changed)
+    if (changed) {
+        TL_LOGI("State", QString("State changed: %1 -> %2")
+                .arg(QLatin1String(lightStateName(oldState)),
+                     QLatin1String(lightStateName(newState))));
         emit stateChanged(m_state);
+    }
 
     // Always refresh timeout, even on duplicate commands (e.g. repeated RED from hooks)
     if (m_state == LightState::Idle)
@@ -36,7 +54,8 @@ void StateManager::handleCommand(const QString &command)
         setState(LightState::WaitingConfirm);
     else if (cmd == "GREEN")
         setState(LightState::Idle);
-    // unknown commands silently ignored
+    else
+        TL_LOGW("State", QString("Ignored unknown command: '%1'").arg(cmd));
 }
 
 int StateManager::timeoutSec() const

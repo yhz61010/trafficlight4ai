@@ -22,6 +22,10 @@
     <message><source>Socket Path:</source><translation>Socket 路径:</translation></message>
     <message><source>Yellow Sound:</source><translation>黄灯提示音:</translation></message>
     <message><source>Green Sound:</source><translation>绿灯提示音:</translation></message>
+    <message><source>Logging:</source><translation>日志:</translation></message>
+    <message><source>Log Level:</source><translation>日志级别:</translation></message>
+    <message><source>Log File:</source><translation>日志文件:</translation></message>
+    <message><source>Open Folder</source><translation>打开目录</translation></message>
     <message><source>Enable</source><translation>启用</translation></message>
     <message><source>Leave empty for system beep</source><translation>留空使用系统提示音</translation></message>
     <message><source>Preview</source><translation>试听</translation></message>

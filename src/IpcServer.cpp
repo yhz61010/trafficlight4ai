@@ -1,5 +1,6 @@
 #include "IpcServer.h"
 #include "StateManager.h"
+#include "Logger.h"
 #include <QLocalServer>
 #include <QLocalSocket>
 #include <QFile>
@@ -74,17 +75,18 @@ IpcServer::IpcServer(StateManager *stateManager, const QString &socketPath, QObj
     removeStaleSocket(m_socketPath);
 
     if (pathBlockedByNonSocket(m_socketPath)) {
-        qWarning("IpcServer: path is occupied by a non-socket file: %s",
-                 qPrintable(m_socketPath));
+        TL_LOGE("Ipc", QString("Path is occupied by a non-socket file: %1").arg(m_socketPath));
         return;
     }
 
     m_server->setSocketOptions(QLocalServer::UserAccessOption);
     connectServer();
     m_ownsSocket = m_server->listen(m_socketPath);
-    if (!m_ownsSocket)
-        qWarning("IpcServer: failed to listen on %s: %s",
-                 qPrintable(m_socketPath), qPrintable(m_server->errorString()));
+    if (m_ownsSocket)
+        TL_LOGI("Ipc", QString("Listening on socket: %1").arg(m_socketPath));
+    else
+        TL_LOGE("Ipc", QString("Failed to listen on %1: %2")
+                .arg(m_socketPath, m_server->errorString()));
 }
 
 IpcServer::~IpcServer()
@@ -109,15 +111,15 @@ bool IpcServer::restart(const QString &newPath)
 
     removeStaleSocket(newPath);
     if (pathBlockedByNonSocket(newPath)) {
-        qWarning("IpcServer: path is occupied by a non-socket file: %s",
-                 qPrintable(newPath));
+        TL_LOGE("Ipc", QString("Path is occupied by a non-socket file: %1").arg(newPath));
         return false;
     }
     if (!newServer->listen(newPath)) {
-        qWarning("IpcServer: failed to listen on %s: %s",
-                 qPrintable(newPath), qPrintable(newServer->errorString()));
+        TL_LOGE("Ipc", QString("Failed to listen on %1: %2")
+                .arg(newPath, newServer->errorString()));
         return false;
     }
+    TL_LOGI("Ipc", QString("Restarted, now listening on socket: %1").arg(newPath));
 
     const QString oldPath = m_socketPath;
     const bool oldOwned = m_ownsSocket;
@@ -148,8 +150,11 @@ void IpcServer::onNewConnection()
         auto finishClient = [this, client, buf]() {
             // Disconnect all signals from client to this to prevent re-entry
             QObject::disconnect(client, nullptr, this, nullptr);
-            if (!buf->isEmpty())
+            if (!buf->isEmpty()) {
+                TL_LOGD("Ipc", QString("Received command: '%1'")
+                        .arg(QString::fromUtf8(*buf).trimmed()));
                 m_stateManager->handleCommand(QString::fromUtf8(*buf));
+            }
             client->disconnectFromServer();
             client->deleteLater();
         };
@@ -163,6 +168,8 @@ void IpcServer::onNewConnection()
         if (client->bytesAvailable()) {
             buf->append(client->read(kMaxCommandBytes));
             if (buf->contains('\n') || buf->size() >= kMaxCommandBytes) {
+                TL_LOGD("Ipc", QString("Received command: '%1'")
+                        .arg(QString::fromUtf8(*buf).trimmed()));
                 m_stateManager->handleCommand(QString::fromUtf8(*buf));
                 client->disconnectFromServer();
                 client->deleteLater();

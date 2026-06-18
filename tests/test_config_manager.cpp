@@ -417,6 +417,64 @@ private slots:
         QCOMPARE(cm2.greenSoundEnabled(), false);
         QCOMPARE(cm2.greenSoundFile(), QString("/tmp/g.mp3"));
     }
+    void defaultLoggingEnabled()
+    {
+        ConfigManager cm(m_configPath);
+        QCOMPARE(cm.loggingEnabled(), true);
+    }
+
+    void defaultLogLevel()
+    {
+        ConfigManager cm(m_configPath);
+        QCOMPARE(cm.logLevel(), QString("warn"));
+    }
+
+    void setAndGetLoggingEnabled()
+    {
+        ConfigManager cm(m_configPath);
+        cm.setLoggingEnabled(false);
+        QCOMPARE(cm.loggingEnabled(), false);
+    }
+
+    void setAndGetLogLevel()
+    {
+        ConfigManager cm(m_configPath);
+        cm.setLogLevel("debug");
+        QCOMPARE(cm.logLevel(), QString("debug"));
+    }
+
+    void rejectsInvalidLogLevel()
+    {
+        ConfigManager cm(m_configPath);
+        cm.setLogLevel("info");
+        cm.setLogLevel("bogus"); // ignored, keeps previous valid value
+        QCOMPARE(cm.logLevel(), QString("info"));
+    }
+
+    void loggingSettingsPersist()
+    {
+        {
+            ConfigManager cm(m_configPath);
+            cm.setLoggingEnabled(false);
+            cm.setLogLevel("error");
+        }
+        ConfigManager cm2(m_configPath);
+        QCOMPARE(cm2.loggingEnabled(), false);
+        QCOMPARE(cm2.logLevel(), QString("error"));
+    }
+
+    void normalizeInvalidLogLevel()
+    {
+        {
+            QFile f(m_configPath);
+            QVERIFY(f.open(QIODevice::WriteOnly));
+            f.write(R"({"logging":{"enabled":true,"level":"nonsense"}})");
+            f.close();
+        }
+        ConfigManager cm(m_configPath);
+        QCOMPARE(cm.logLevel(), QString("warn"));
+    }
+
     void batchSaveSuppressesWrites()
     {
         ConfigManager cm(m_configPath);

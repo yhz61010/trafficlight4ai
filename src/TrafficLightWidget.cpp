@@ -1,7 +1,7 @@
 #include "TrafficLightWidget.h"
+#include "Logger.h"
 #include <QPainter>
 #include <QEasingCurve>
-#include <QDebug>
 
 TrafficLightWidget::TrafficLightWidget(QWidget *parent)
     : QWidget(parent)
@@ -83,20 +83,22 @@ qreal TrafficLightWidget::activeAlpha() const
 void TrafficLightWidget::setActiveAlpha(qreal alpha)
 {
     m_activeAlpha = alpha;
-    qDebug("[Widget] setActiveAlpha: %.2f state=%d", alpha, static_cast<int>(m_state));
+    TL_LOGV("Widget", QString("setActiveAlpha: %1 state=%2")
+            .arg(alpha, 0, 'f', 2).arg(static_cast<int>(m_state)));
     emit activeAlphaChanged(m_activeAlpha);
     update();
 }
 
 void TrafficLightWidget::onStateChanged(LightState newState)
 {
-    qDebug("[Widget] onStateChanged: %d -> %d", static_cast<int>(m_state), static_cast<int>(newState));
+    TL_LOGD("Widget", QString("onStateChanged: %1 -> %2")
+            .arg(static_cast<int>(m_state)).arg(static_cast<int>(newState)));
     m_state = newState;
 
     if (m_state == LightState::Idle) {
         stopAnimation();
         m_activeAlpha = 1.0;
-        qDebug("[Widget] set alpha=1.0 directly (no signal)");
+        TL_LOGD("Widget", "Set alpha=1.0 directly (no signal)");
     } else {
         startAnimation();
     }
@@ -107,6 +109,8 @@ void TrafficLightWidget::startAnimation()
 {
     stopAnimation();
 
+    TL_LOGD("Widget", QString("Start animation: mode=%1 period=%2ms")
+            .arg(m_animationMode).arg(m_animationPeriodMs));
     m_animation = new QPropertyAnimation(this, "activeAlpha", this);
     m_animation->setDuration(m_animationPeriodMs);
     m_animation->setLoopCount(-1); // infinite

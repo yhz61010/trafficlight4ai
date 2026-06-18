@@ -8,6 +8,7 @@ add_tl4ai_test(test_state_manager)
 add_tl4ai_test(test_config_manager)
 add_tl4ai_test(test_ipc_server)
 add_tl4ai_test(test_ai_tool_strategy)
+add_tl4ai_test(test_logger)
 
 # TrafficLightWidget test needs Qt6::Widgets through tl4ai_gui.
 add_executable(test_traffic_light_widget test_traffic_light_widget.cpp)

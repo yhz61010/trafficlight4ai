@@ -153,6 +153,10 @@ Config file: `~/.config/trafficlight4ai/config.json`
     "greenEnabled": true,
     "yellowFile": "",
     "greenFile": ""
+  },
+  "logging": {
+    "enabled": true,
+    "level": "warn"
   }
 }
 ```
@@ -171,6 +175,10 @@ Config file: `~/.config/trafficlight4ai/config.json`
 | `socket.path` | platform-specific | See below |
 | `sound.yellowEnabled` / `greenEnabled` | `true` | Sound notification toggle |
 | `sound.yellowFile` / `greenFile` | `""` | Custom sound file path (WAV/MP3/OGG); empty = system beep |
+| `logging.enabled` | `true` | Write a diagnostic log file (and console) |
+| `logging.level` | `"warn"` | Minimum level: `verb` / `debug` / `info` / `warn` / `error` |
+
+The log file lives at `<app-data>/logs/trafficlight4ai.log` (Linux: `~/.local/share/trafficlight4ai/logs/`), rotates at ~5 MB keeping one `.1` backup, and its path is shown in Settings with an "Open Folder" button. `verb` is the most verbose level and logs every breathing-light opacity change.
 
 The default socket path is platform-specific: Linux uses `$XDG_RUNTIME_DIR/trafficlight4ai.sock` (fallback `/tmp/trafficlight4ai-$UID.sock`), macOS uses `$TMPDIR/trafficlight4ai.sock`, and Windows uses the named pipe `trafficlight4ai`. It can also be overridden via `TL4AI_SOCKET` environment variable.
 

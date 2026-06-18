@@ -1,12 +1,12 @@
 #include "TrayIcon.h"
 #include "FloatingWindow.h"
 #include "SettingsDialog.h"
+#include "Logger.h"
 #include <QMenu>
 #include <QApplication>
 #include <QPainter>
 #include <QPixmap>
 #include <QTimer>
-#include <QDebug>
 
 TrayIcon::TrayIcon(FloatingWindow *window, SettingsDialog *settingsDialog, QObject *parent)
     : QSystemTrayIcon(parent), m_window(window)
@@ -52,7 +52,8 @@ void TrayIcon::retranslateUi()
 
 void TrayIcon::onStateChanged(LightState newState)
 {
-    qDebug("[TrayIcon] onStateChanged: %d -> %d", static_cast<int>(m_state), static_cast<int>(newState));
+    TL_LOGD("Tray", QString("onStateChanged: %1 -> %2")
+            .arg(static_cast<int>(m_state)).arg(static_cast<int>(newState)));
     m_state = newState;
     switch (newState) {
     case LightState::Working:
@@ -65,13 +66,13 @@ void TrayIcon::onStateChanged(LightState newState)
         m_currentColor = QColor(40, 200, 40);
         break;
     }
-    qDebug("[TrayIcon] setIcon color=(%d,%d,%d) alpha=1.0",
-           m_currentColor.red(), m_currentColor.green(), m_currentColor.blue());
+    TL_LOGD("Tray", QString("setIcon color=(%1,%2,%3) alpha=1.0")
+            .arg(m_currentColor.red()).arg(m_currentColor.green()).arg(m_currentColor.blue()));
     setIcon(createIcon(m_currentColor));
 
     if (newState == LightState::Idle) {
         QTimer::singleShot(150, this, [this]() {
-            qDebug("[TrayIcon] delayed re-apply green icon");
+            TL_LOGD("Tray", "Delayed re-apply green icon");
             setIcon(createIcon(m_currentColor));
         });
     }

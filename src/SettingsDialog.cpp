@@ -5,7 +5,11 @@
 #include "StateManager.h"
 #include "AiToolStrategy.h"
 #include "SoundUtils.h"
+#include "Logger.h"
 #include <QCheckBox>
+#include <QDesktopServices>
+#include <QStandardPaths>
+#include <QUrl>
 #include <QComboBox>
 #include <QSlider>
 #include <QSpinBox>
@@ -116,6 +120,29 @@ SettingsDialog::SettingsDialog(ConfigManager *config, TrafficLightWidget *lightW
     greenSoundLayout->addWidget(m_greenPreviewBtn);
     greenSoundLayout->addWidget(m_greenBrowseBtn);
 
+    // Logging
+    m_logEnabledCheck = new QCheckBox();
+    m_logEnabledCheck->setObjectName("logEnabledCheck");
+
+    m_logLevelCombo = new QComboBox();
+    m_logLevelCombo->setObjectName("logLevelCombo");
+    // Level tokens are technical identifiers; stored lowercase in config.
+    m_logLevelCombo->addItem("VERB", "verb");
+    m_logLevelCombo->addItem("DEBUG", "debug");
+    m_logLevelCombo->addItem("INFO", "info");
+    m_logLevelCombo->addItem("WARN", "warn");
+    m_logLevelCombo->addItem("ERROR", "error");
+
+    m_logPathEdit = new QLineEdit();
+    m_logPathEdit->setObjectName("logPathEdit");
+    m_logPathEdit->setReadOnly(true);
+    m_logPathEdit->setText(Logger::defaultLogFilePath());
+    m_logOpenBtn = new QPushButton();
+    m_logOpenBtn->setObjectName("logOpenButton");
+    auto *logPathLayout = new QHBoxLayout();
+    logPathLayout->addWidget(m_logPathEdit);
+    logPathLayout->addWidget(m_logOpenBtn);
+
     // Form layout
     m_formLayout = new QFormLayout();
     m_formLayout->addRow(tr("Language:"), m_langCombo);
@@ -127,6 +154,9 @@ SettingsDialog::SettingsDialog(ConfigManager *config, TrafficLightWidget *lightW
     m_formLayout->addRow(tr("Socket Path:"), m_socketEdit);
     m_formLayout->addRow(tr("Yellow Sound:"), yellowSoundLayout);
     m_formLayout->addRow(tr("Green Sound:"), greenSoundLayout);
+    m_formLayout->addRow(tr("Logging:"), m_logEnabledCheck);
+    m_formLayout->addRow(tr("Log Level:"), m_logLevelCombo);
+    m_formLayout->addRow(tr("Log File:"), logPathLayout);
 
     // Buttons
     m_hooksBtn = new QPushButton();
@@ -182,6 +212,12 @@ SettingsDialog::SettingsDialog(ConfigManager *config, TrafficLightWidget *lightW
             this, &SettingsDialog::onBrowseYellowSound);
     connect(m_greenBrowseBtn, &QPushButton::clicked,
             this, &SettingsDialog::onBrowseGreenSound);
+    connect(m_logEnabledCheck, &QCheckBox::toggled,
+            this, &SettingsDialog::onLogEnabledToggled);
+    connect(m_logLevelCombo, &QComboBox::currentIndexChanged,
+            this, &SettingsDialog::onLogLevelChanged);
+    connect(m_logOpenBtn, &QPushButton::clicked,
+            this, &SettingsDialog::onOpenLogFolder);
     connect(m_hooksBtn, &QPushButton::clicked,
             this, &SettingsDialog::onShowHooksTemplate);
     connect(m_editHooksBtn, &QPushButton::clicked,
@@ -198,7 +234,8 @@ void SettingsDialog::retranslateUi()
     const QStringList labels = {
         tr("Language:"), tr("AI Tool:"), tr("Timeout:"), tr("Window Size:"),
         tr("Animation Mode:"), tr("Animation Period:"), tr("Socket Path:"),
-        tr("Yellow Sound:"), tr("Green Sound:")
+        tr("Yellow Sound:"), tr("Green Sound:"),
+        tr("Logging:"), tr("Log Level:"), tr("Log File:")
     };
     for (int i = 0; i < labels.size() && i < m_formLayout->rowCount(); ++i) {
         auto *item = m_formLayout->itemAt(i, QFormLayout::LabelRole);
@@ -237,6 +274,10 @@ void SettingsDialog::retranslateUi()
     m_greenSoundEdit->setPlaceholderText(tr("Default: green.ogg"));
     m_greenPreviewBtn->setText(tr("Preview"));
     m_greenBrowseBtn->setText(tr("Browse"));
+
+    // Logging controls
+    m_logEnabledCheck->setText(tr("Enable"));
+    m_logOpenBtn->setText(tr("Open Folder"));
 
     // Buttons
     m_hooksBtn->setText(tr("View Recommended Hooks Config"));
@@ -319,6 +360,20 @@ void SettingsDialog::showEvent(QShowEvent *event)
     m_greenSoundCheck->blockSignals(false);
     m_greenSoundEdit->setText(m_config->greenSoundFile());
 
+    // Logging settings
+    const bool logEnabled = m_config->loggingEnabled();
+    m_logEnabledCheck->blockSignals(true);
+    m_logEnabledCheck->setChecked(logEnabled);
+    m_logEnabledCheck->blockSignals(false);
+
+    m_logLevelCombo->blockSignals(true);
+    const int levelIdx = m_logLevelCombo->findData(m_config->logLevel());
+    m_logLevelCombo->setCurrentIndex(levelIdx >= 0 ? levelIdx : m_logLevelCombo->findData("warn"));
+    m_logLevelCombo->blockSignals(false);
+    m_logLevelCombo->setEnabled(logEnabled);
+
+    m_logPathEdit->setText(Logger::defaultLogFilePath());
+
     updatePreviewButtons();
 }
 
@@ -335,6 +390,8 @@ void SettingsDialog::takeSnapshot()
     m_snapYellowSoundFile = m_config->yellowSoundFile();
     m_snapGreenSoundEnabled = m_config->greenSoundEnabled();
     m_snapGreenSoundFile = m_config->greenSoundFile();
+    m_snapLogEnabled = m_config->loggingEnabled();
+    m_snapLogLevel = m_config->logLevel();
 }
 
 void SettingsDialog::restoreSnapshot()
@@ -374,6 +431,12 @@ void SettingsDialog::restoreSnapshot()
     m_config->setYellowSoundFile(m_snapYellowSoundFile);
     m_config->setGreenSoundEnabled(m_snapGreenSoundEnabled);
     m_config->setGreenSoundFile(m_snapGreenSoundFile);
+
+    // Restore logging settings (config + live Logger)
+    m_config->setLoggingEnabled(m_snapLogEnabled);
+    m_config->setLogLevel(m_snapLogLevel);
+    Logger::instance().setEnabled(m_snapLogEnabled);
+    Logger::instance().setLevel(Logger::levelFromString(m_snapLogLevel));
 
     m_config->endBatchSave();
 }
@@ -457,11 +520,15 @@ void SettingsDialog::onAnimationPeriodChanged(int value)
 
 void SettingsDialog::onYellowSoundToggled(bool checked)
 {
+    TL_LOGI("Sound", QString("Yellow sound enabled: %1")
+            .arg(checked ? QStringLiteral("true") : QStringLiteral("false")));
     m_config->setYellowSoundEnabled(checked);
 }
 
 void SettingsDialog::onGreenSoundToggled(bool checked)
 {
+    TL_LOGI("Sound", QString("Green sound enabled: %1")
+            .arg(checked ? QStringLiteral("true") : QStringLiteral("false")));
     m_config->setGreenSoundEnabled(checked);
 }
 
@@ -493,6 +560,7 @@ void SettingsDialog::onBrowseYellowSound()
     QString file = QFileDialog::getOpenFileName(this, tr("Select Yellow Sound"), QString(),
                                                  tr("Audio Files (*.wav *.mp3 *.ogg)"));
     if (!file.isEmpty()) {
+        TL_LOGI("Sound", QString("Yellow sound file set: %1").arg(file));
         m_yellowSoundEdit->setText(file);
         m_config->setYellowSoundFile(file);
     }
@@ -503,9 +571,33 @@ void SettingsDialog::onBrowseGreenSound()
     QString file = QFileDialog::getOpenFileName(this, tr("Select Green Sound"), QString(),
                                                  tr("Audio Files (*.wav *.mp3 *.ogg)"));
     if (!file.isEmpty()) {
+        TL_LOGI("Sound", QString("Green sound file set: %1").arg(file));
         m_greenSoundEdit->setText(file);
         m_config->setGreenSoundFile(file);
     }
+}
+
+void SettingsDialog::onLogEnabledToggled(bool checked)
+{
+    m_config->setLoggingEnabled(checked);
+    Logger::instance().setEnabled(checked);
+    m_logLevelCombo->setEnabled(checked);
+}
+
+void SettingsDialog::onLogLevelChanged(int index)
+{
+    const QString level = m_logLevelCombo->itemData(index).toString();
+    if (level.isEmpty())
+        return;
+    m_config->setLogLevel(level);
+    Logger::instance().setLevel(Logger::levelFromString(level));
+}
+
+void SettingsDialog::onOpenLogFolder()
+{
+    const QString dir = QFileInfo(Logger::defaultLogFilePath()).absolutePath();
+    QDir().mkpath(dir); // ensure the folder exists before opening
+    QDesktopServices::openUrl(QUrl::fromLocalFile(dir));
 }
 
 void SettingsDialog::onAccept()

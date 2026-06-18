@@ -14,11 +14,28 @@
 #include "SettingsDialog.h"
 #include "AiToolStrategy.h"
 #include "SoundUtils.h"
+#include "Logger.h"
 
 static QString defaultConfigPath()
 {
     return QStandardPaths::writableLocation(QStandardPaths::ConfigLocation)
            + "/trafficlight4ai/config.json";
+}
+
+// Route Qt's own qDebug/qWarning/etc. through the centralized Logger so that
+// framework messages share the same file/console sink and level filtering.
+static void tl4aiMessageHandler(QtMsgType type, const QMessageLogContext &,
+                                const QString &msg)
+{
+    LogLevel level = LogLevel::Debug;
+    switch (type) {
+    case QtDebugMsg:    level = LogLevel::Debug; break;
+    case QtInfoMsg:     level = LogLevel::Info;  break;
+    case QtWarningMsg:  level = LogLevel::Warn;  break;
+    case QtCriticalMsg: level = LogLevel::Error; break;
+    case QtFatalMsg:    level = LogLevel::Error; break;
+    }
+    Logger::instance().log(level, "Qt", msg);
 }
 
 static QTranslator *s_translator = nullptr;
@@ -63,6 +80,16 @@ int main(int argc, char *argv[])
 
     // Core
     ConfigManager config(defaultConfigPath());
+
+    // Initialize logging before any other subsystem so their startup is captured.
+    Logger::instance().configure(config.loggingEnabled(),
+                                 Logger::levelFromString(config.logLevel()),
+                                 Logger::defaultLogFilePath());
+    qInstallMessageHandler(tl4aiMessageHandler);
+    TL_LOGI("App", QString("trafficlight4ai starting (logEnabled=%1, logLevel=%2, logFile=%3)")
+            .arg(config.loggingEnabled() ? QStringLiteral("true") : QStringLiteral("false"),
+                 config.logLevel(), Logger::instance().filePath()));
+
     StateManager stateManager;
     stateManager.setTimeoutSec(config.timeoutSec());
     IpcServer ipcServer(&stateManager, config.socketPath());
@@ -102,10 +129,14 @@ int main(int argc, char *argv[])
                      [&config](LightState state) {
         if (state == LightState::WaitingConfirm && config.yellowSoundEnabled()) {
             QString f = config.yellowSoundFile();
-            playSound(f.isEmpty() ? kDefaultYellowSound : f);
+            const QString path = f.isEmpty() ? QString::fromLatin1(kDefaultYellowSound) : f;
+            TL_LOGI("Sound", QString("WaitingConfirm -> play yellow sound: %1").arg(path));
+            playSound(path);
         } else if (state == LightState::Idle && config.greenSoundEnabled()) {
             QString f = config.greenSoundFile();
-            playSound(f.isEmpty() ? kDefaultGreenSound : f);
+            const QString path = f.isEmpty() ? QString::fromLatin1(kDefaultGreenSound) : f;
+            TL_LOGI("Sound", QString("Idle -> play green sound: %1").arg(path));
+            playSound(path);
         }
     });
 

@@ -64,6 +64,10 @@ AppImage：GUI 主程序 `trafficlight4ai` 也接受 `red`/`yellow`/`green` 参�
 
 配置文件路径：`~/.config/trafficlight4ai/config.json`，字段说明见 README.md 的 Configuration 章节。
 
+### 日志系统
+
+集中式分级日志器（`Logger`，`tl4ai_core`）：5 级 `VERB<DEBUG<INFO<WARN<ERROR`，默认 WARN，文件 + 控制台双写、大小滚动，级别由 config `logging` 字段控制，设置对话框可实时开关/选级别/打开日志目录。设计、配置与各模块埋点详见 [docs/LOGGING_zh.md](docs/LOGGING_zh.md)，英文版 [docs/LOGGING.md](docs/LOGGING.md)。
+
 ### AI 工具策略模式
 
 `AiToolStrategy` 接口封装不同 AI 工具的差异（hooks 模板、配置路径、默认超时等），通过 `AiToolRegistry` 注册和查找。新增工具只需添加一个 Strategy 实现并注册到 Registry，详见 `src/AiToolStrategy.h`。
