@@ -69,5 +69,9 @@ vcpkg_installed/
 Testing/
 .cache/
 
+# JetBrains IDE generated module files
+*.iml
+.idea/modules.xml
+
 # Claude Code commands (symlinked to shared external directory)
 .claude/commands/leo
