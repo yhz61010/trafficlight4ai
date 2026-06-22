@@ -1,23 +1,23 @@
-# Code Review Fixes Implementation Plan
+# 代码审查修复实施计划
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **致 agentic worker：** 必需的子技能：使用 superpowers:subagent-driven-development（推荐）或 superpowers:executing-plans 逐任务实施本计划。各步骤使用复选框（`- [ ]`）语法进行追踪。
 
-**Goal:** Fix all 17 issues identified in the full-codebase code review — security, bugs, missing includes, efficiency, and test coverage gaps.
+**目标：** 修复全代码库代码审查中发现的全部 17 个问题——安全、Bug、缺失的 include、效率以及测试覆盖缺口。
 
-**Architecture:** Fixes are grouped into 6 tasks by concern area. Each task is independently committable. No new files are created except test additions.
+**架构：** 修复按关注领域归并为 6 个任务。每个任务均可独立提交。除新增测试外不创建任何新文件。
 
-**Tech Stack:** C++17, Qt 6, CMake, QTest
+**技术栈：** C++17、Qt 6、CMake、QTest
 
 ---
 
-### Task 1: Security — IPC socket access control and read size limit
+### 任务 1：安全——IPC socket 访问控制与读取大小限制
 
-**Files:**
-- Modify: `src/IpcServer.cpp:59-70` (constructor), `src/IpcServer.cpp:84-110` (restart), `src/IpcServer.cpp:117-138` (onNewConnection)
+**文件：**
+- 修改：`src/IpcServer.cpp:59-70`（构造函数）、`src/IpcServer.cpp:84-110`（restart）、`src/IpcServer.cpp:117-138`（onNewConnection）
 
-- [ ] **Step 1: Add UserAccessOption before listen() in constructor**
+- [ ] **步骤 1：在构造函数中 listen() 之前添加 UserAccessOption**
 
-In `src/IpcServer.cpp`, change the constructor to set socket options before listen:
+在 `src/IpcServer.cpp` 中，修改构造函数，在 listen 之前设置 socket 选项：
 
 ```cpp
 IpcServer::IpcServer(StateManager *stateManager, const QString &socketPath, QObject *parent)
@@ -35,9 +35,9 @@ IpcServer::IpcServer(StateManager *stateManager, const QString &socketPath, QObj
 }
 ```
 
-- [ ] **Step 2: Add UserAccessOption before listen() in restart()**
+- [ ] **步骤 2：在 restart() 中 listen() 之前添加 UserAccessOption**
 
-In `src/IpcServer.cpp` `restart()`, add socket options on newServer before listen:
+在 `src/IpcServer.cpp` 的 `restart()` 中，在 newServer 上于 listen 之前添加 socket 选项：
 
 ```cpp
 auto newServer = std::make_unique<QLocalServer>();
@@ -47,9 +47,9 @@ removeStaleSocket(newPath);
 if (!newServer->listen(newPath)) {
 ```
 
-- [ ] **Step 3: Replace readAll() with read(64) in onNewConnection**
+- [ ] **步骤 3：在 onNewConnection 中用 read(64) 替换 readAll()**
 
-In `src/IpcServer.cpp` `onNewConnection()`, change the lambda:
+在 `src/IpcServer.cpp` 的 `onNewConnection()` 中，修改 lambda：
 
 ```cpp
 auto processData = [this, client]() {
@@ -61,7 +61,7 @@ auto processData = [this, client]() {
 };
 ```
 
-- [ ] **Step 4: Commit**
+- [ ] **步骤 4：提交**
 
 ```bash
 git add src/IpcServer.cpp
@@ -70,16 +70,16 @@ git commit -m "fix: restrict IPC socket to owner-only access and cap read size"
 
 ---
 
-### Task 2: Bugs — IPC double-delete, restart race, missing "small" size, SoundUtils leak
+### 任务 2：Bug——IPC 双重 delete、restart 竞态、缺失 "small" 尺寸、SoundUtils 泄漏
 
-**Files:**
-- Modify: `src/IpcServer.cpp:117-138` (onNewConnection), `src/IpcServer.cpp:84-110` (restart)
-- Modify: `src/main.cpp:62-70`
-- Modify: `src/SoundUtils.cpp:9-42`
+**文件：**
+- 修改：`src/IpcServer.cpp:117-138`（onNewConnection）、`src/IpcServer.cpp:84-110`（restart）
+- 修改：`src/main.cpp:62-70`
+- 修改：`src/SoundUtils.cpp:9-42`
 
-- [ ] **Step 1: Fix double-delete in onNewConnection — move disconnected signal into else branch**
+- [ ] **步骤 1：修复 onNewConnection 中的双重 delete——将 disconnected 信号移入 else 分支**
 
-In `src/IpcServer.cpp`, restructure `onNewConnection()`:
+在 `src/IpcServer.cpp` 中，重构 `onNewConnection()`：
 
 ```cpp
 void IpcServer::onNewConnection()
@@ -103,9 +103,9 @@ void IpcServer::onNewConnection()
 }
 ```
 
-- [ ] **Step 2: Fix restart() race — connect newConnection before listen()**
+- [ ] **步骤 2：修复 restart() 竞态——在 listen() 之前连接 newConnection**
 
-In `src/IpcServer.cpp`, restructure `restart()`:
+在 `src/IpcServer.cpp` 中，重构 `restart()`：
 
 ```cpp
 bool IpcServer::restart(const QString &newPath)
@@ -138,11 +138,11 @@ bool IpcServer::restart(const QString &newPath)
 }
 ```
 
-Note: `connectServer()` is called after `m_server` is swapped, which connects `newConnection` on the new server. Since `listen()` was already called, any connection arriving between `listen()` and `connectServer()` would be queued in `nextPendingConnection`. As soon as `connectServer()` fires, `onNewConnection` will drain the queue. This is safe because the signal is queued and no event loop runs between `listen()` and `connectServer()` in the same function.
+注意：`connectServer()` 在 `m_server` 被交换之后调用，它会在新服务器上连接 `newConnection`。由于此前已调用 `listen()`，任何在 `listen()` 与 `connectServer()` 之间到达的连接都会在 `nextPendingConnection` 中排队。一旦 `connectServer()` 触发，`onNewConnection` 就会清空该队列。这是安全的，因为信号是排队的，且在同一函数内 `listen()` 与 `connectServer()` 之间不会运行事件循环。
 
-- [ ] **Step 3: Add missing "small" case in main.cpp**
+- [ ] **步骤 3：在 main.cpp 中补上缺失的 "small" 分支**
 
-In `src/main.cpp`, add the missing branch after line 64:
+在 `src/main.cpp` 中，于第 64 行之后补上缺失的分支：
 
 ```cpp
 const QString size = config.windowSize();
@@ -158,9 +158,9 @@ else if (size == "xlarge")
     lightWidget->setSizePreset(TrafficLightWidget::ExtraLarge);
 ```
 
-- [ ] **Step 4: Fix SoundUtils leak — parent audioOutput to player**
+- [ ] **步骤 4：修复 SoundUtils 泄漏——将 audioOutput 的父对象设为 player**
 
-In `src/SoundUtils.cpp`, parent `audioOutput` to `player` and remove manual `audioOutput->deleteLater()` calls:
+在 `src/SoundUtils.cpp` 中，将 `audioOutput` 的父对象设为 `player`，并移除手动的 `audioOutput->deleteLater()` 调用：
 
 ```cpp
 void playSound(const QString &filePath, QObject *errorContext)
@@ -197,7 +197,7 @@ void playSound(const QString &filePath, QObject *errorContext)
 }
 ```
 
-- [ ] **Step 5: Commit**
+- [ ] **步骤 5：提交**
 
 ```bash
 git add src/IpcServer.cpp src/main.cpp src/SoundUtils.cpp
@@ -206,58 +206,58 @@ git commit -m "fix: IPC double-delete, restart race, missing small size, SoundUt
 
 ---
 
-### Task 3: Missing explicit #includes (CLAUDE.md compliance)
+### 任务 3：缺失的显式 #include（CLAUDE.md 合规）
 
-**Files:**
-- Modify: `src/TrayIcon.h`
-- Modify: `src/IpcServer.h`
-- Modify: `src/TrafficLightWidget.cpp`
-- Modify: `tests/test_ai_tool_strategy.cpp`
-- Modify: `tests/test_tl4ai_ctl.cpp`
+**文件：**
+- 修改：`src/TrayIcon.h`
+- 修改：`src/IpcServer.h`
+- 修改：`src/TrafficLightWidget.cpp`
+- 修改：`tests/test_ai_tool_strategy.cpp`
+- 修改：`tests/test_tl4ai_ctl.cpp`
 
-- [ ] **Step 1: Add QColor and QIcon to TrayIcon.h**
+- [ ] **步骤 1：在 TrayIcon.h 中添加 QColor 和 QIcon**
 
-Add after `#include <QSystemTrayIcon>`:
+在 `#include <QSystemTrayIcon>` 之后添加：
 
 ```cpp
 #include <QColor>
 #include <QIcon>
 ```
 
-- [ ] **Step 2: Add QString to IpcServer.h**
+- [ ] **步骤 2：在 IpcServer.h 中添加 QString**
 
-Add after `#include <QObject>`:
+在 `#include <QObject>` 之后添加：
 
 ```cpp
 #include <QString>
 ```
 
-- [ ] **Step 3: Add QEasingCurve to TrafficLightWidget.cpp**
+- [ ] **步骤 3：在 TrafficLightWidget.cpp 中添加 QEasingCurve**
 
-Add after `#include <QPainter>`:
+在 `#include <QPainter>` 之后添加：
 
 ```cpp
 #include <QEasingCurve>
 ```
 
-- [ ] **Step 4: Add QRegularExpression to test_ai_tool_strategy.cpp**
+- [ ] **步骤 4：在 test_ai_tool_strategy.cpp 中添加 QRegularExpression**
 
-Add after `#include <QtTest>`:
+在 `#include <QtTest>` 之后添加：
 
 ```cpp
 #include <QRegularExpression>
 ```
 
-- [ ] **Step 5: Add QTemporaryDir and QFile to test_tl4ai_ctl.cpp**
+- [ ] **步骤 5：在 test_tl4ai_ctl.cpp 中添加 QTemporaryDir 和 QFile**
 
-Add after `#include <QProcess>`:
+在 `#include <QProcess>` 之后添加：
 
 ```cpp
 #include <QTemporaryDir>
 #include <QFile>
 ```
 
-- [ ] **Step 6: Commit**
+- [ ] **步骤 6：提交**
 
 ```bash
 git add src/TrayIcon.h src/IpcServer.h src/TrafficLightWidget.cpp tests/test_ai_tool_strategy.cpp tests/test_tl4ai_ctl.cpp
@@ -266,23 +266,23 @@ git commit -m "fix: add missing explicit Qt includes per CLAUDE.md rules"
 
 ---
 
-### Task 4: Efficiency — TrayIcon pixmap reuse and ConfigManager batch save
+### 任务 4：效率——TrayIcon pixmap 复用与 ConfigManager 批量保存
 
-**Files:**
-- Modify: `src/TrayIcon.h`
-- Modify: `src/TrayIcon.cpp`
-- Modify: `src/ConfigManager.h`
-- Modify: `src/ConfigManager.cpp`
+**文件：**
+- 修改：`src/TrayIcon.h`
+- 修改：`src/TrayIcon.cpp`
+- 修改：`src/ConfigManager.h`
+- 修改：`src/ConfigManager.cpp`
 
-- [ ] **Step 1: Reuse QPixmap in TrayIcon instead of allocating per frame**
+- [ ] **步骤 1：在 TrayIcon 中复用 QPixmap，而非每帧分配**
 
-In `src/TrayIcon.h`, add a member:
+在 `src/TrayIcon.h` 中，添加一个成员：
 
 ```cpp
 QPixmap m_iconPixmap{64, 64};
 ```
 
-In `src/TrayIcon.cpp`, change `createIcon()` to reuse the pixmap:
+在 `src/TrayIcon.cpp` 中，修改 `createIcon()` 以复用该 pixmap：
 
 ```cpp
 QIcon TrayIcon::createIcon(const QColor &color) const
@@ -299,28 +299,28 @@ QIcon TrayIcon::createIcon(const QColor &color) const
 }
 ```
 
-Since `m_iconPixmap` is mutable state used in a `const` method, declare it as `mutable`:
+由于 `m_iconPixmap` 是在 `const` 方法中使用的可变状态，应将其声明为 `mutable`：
 
 ```cpp
 mutable QPixmap m_iconPixmap{64, 64};
 ```
 
-- [ ] **Step 2: Add beginBatchSave/endBatchSave to ConfigManager**
+- [ ] **步骤 2：为 ConfigManager 添加 beginBatchSave/endBatchSave**
 
-In `src/ConfigManager.h`, add:
+在 `src/ConfigManager.h` 中，添加：
 
 ```cpp
 void beginBatchSave();
 void endBatchSave();
 ```
 
-And a private member:
+以及一个私有成员：
 
 ```cpp
 bool m_batchSave = false;
 ```
 
-In `src/ConfigManager.cpp`, implement:
+在 `src/ConfigManager.cpp` 中，实现：
 
 ```cpp
 void ConfigManager::beginBatchSave()
@@ -335,11 +335,11 @@ void ConfigManager::endBatchSave()
 }
 ```
 
-And guard `save()` calls in each setter. Change the existing `save()` method body to:
+并在每个 setter 中守护 `save()` 调用。将现有 `save()` 方法的方法体改为：
 
-At the end of every setter (the private `save()` calls), wrap them:
+在每个 setter 的末尾（即私有的 `save()` 调用处），将其包裹起来：
 
-Actually, a cleaner approach — modify `save()` itself to check the flag:
+实际上，更干净的做法是——修改 `save()` 本身，使其检查该标志：
 
 ```cpp
 void ConfigManager::save()
@@ -359,9 +359,9 @@ void ConfigManager::save()
 }
 ```
 
-- [ ] **Step 3: Use batch save in SettingsDialog::restoreSnapshot()**
+- [ ] **步骤 3：在 SettingsDialog::restoreSnapshot() 中使用批量保存**
 
-In `src/SettingsDialog.cpp`, wrap `restoreSnapshot()` setter calls:
+在 `src/SettingsDialog.cpp` 中，包裹 `restoreSnapshot()` 的 setter 调用：
 
 ```cpp
 void SettingsDialog::restoreSnapshot()
@@ -374,7 +374,7 @@ void SettingsDialog::restoreSnapshot()
 }
 ```
 
-- [ ] **Step 4: Commit**
+- [ ] **步骤 4：提交**
 
 ```bash
 git add src/TrayIcon.h src/TrayIcon.cpp src/ConfigManager.h src/ConfigManager.cpp src/SettingsDialog.cpp
@@ -383,16 +383,16 @@ git commit -m "perf: reuse TrayIcon pixmap and batch ConfigManager saves"
 
 ---
 
-### Task 5: Test coverage — ConfigManager language/sound, Claude Code events, StateManager setTimeoutSec(0) while running
+### 任务 5：测试覆盖——ConfigManager 语言/声音、Claude Code 事件、运行中调用 StateManager setTimeoutSec(0)
 
-**Files:**
-- Modify: `tests/test_config_manager.cpp`
-- Modify: `tests/test_ai_tool_strategy.cpp`
-- Modify: `tests/test_state_manager.cpp`
+**文件：**
+- 修改：`tests/test_config_manager.cpp`
+- 修改：`tests/test_ai_tool_strategy.cpp`
+- 修改：`tests/test_state_manager.cpp`
 
-- [ ] **Step 1: Add language and sound tests to test_config_manager.cpp**
+- [ ] **步骤 1：在 test_config_manager.cpp 中添加语言和声音测试**
 
-Add these test slots before the closing `};`:
+在结尾的 `};` 之前添加这些测试槽：
 
 ```cpp
 void defaultLanguage()
@@ -487,9 +487,9 @@ void soundSettingsPersist()
 }
 ```
 
-- [ ] **Step 2: Add Claude Code event validation test to test_ai_tool_strategy.cpp**
+- [ ] **步骤 2：在 test_ai_tool_strategy.cpp 中添加 Claude Code 事件校验测试**
 
-Add this test slot:
+添加这个测试槽：
 
 ```cpp
 void claudeTemplateOnlyUsesValidEvents()
@@ -515,9 +515,9 @@ void claudeTemplateOnlyUsesValidEvents()
 }
 ```
 
-- [ ] **Step 3: Add setTimeoutSec(0) while running test to test_state_manager.cpp**
+- [ ] **步骤 3：在 test_state_manager.cpp 中添加运行中调用 setTimeoutSec(0) 的测试**
 
-Add this test slot:
+添加这个测试槽：
 
 ```cpp
 void setTimeoutZeroWhileWorkingCancelsTimer()
@@ -532,7 +532,7 @@ void setTimeoutZeroWhileWorkingCancelsTimer()
 }
 ```
 
-- [ ] **Step 4: Commit**
+- [ ] **步骤 4：提交**
 
 ```bash
 git add tests/test_config_manager.cpp tests/test_ai_tool_strategy.cpp tests/test_state_manager.cpp
@@ -541,23 +541,23 @@ git commit -m "test: add coverage for language, sound, Claude Code events, and t
 
 ---
 
-### Task 6: Deduplicate sizes/presets mapping
+### 任务 6：去重 sizes/presets 映射
 
-**Files:**
-- Modify: `src/TrafficLightWidget.h`
-- Modify: `src/TrafficLightWidget.cpp`
-- Modify: `src/main.cpp`
-- Modify: `src/SettingsDialog.cpp`
+**文件：**
+- 修改：`src/TrafficLightWidget.h`
+- 修改：`src/TrafficLightWidget.cpp`
+- 修改：`src/main.cpp`
+- 修改：`src/SettingsDialog.cpp`
 
-- [ ] **Step 1: Add static sizePresetFromString() to TrafficLightWidget**
+- [ ] **步骤 1：为 TrafficLightWidget 添加静态方法 sizePresetFromString()**
 
-In `src/TrafficLightWidget.h`, add a public static method:
+在 `src/TrafficLightWidget.h` 中，添加一个 public 静态方法：
 
 ```cpp
 static SizePreset sizePresetFromString(const QString &size);
 ```
 
-In `src/TrafficLightWidget.cpp`, implement:
+在 `src/TrafficLightWidget.cpp` 中，实现：
 
 ```cpp
 TrafficLightWidget::SizePreset TrafficLightWidget::sizePresetFromString(const QString &size)
@@ -571,17 +571,17 @@ TrafficLightWidget::SizePreset TrafficLightWidget::sizePresetFromString(const QS
 }
 ```
 
-- [ ] **Step 2: Use sizePresetFromString in main.cpp**
+- [ ] **步骤 2：在 main.cpp 中使用 sizePresetFromString**
 
-Replace the if-else chain in `src/main.cpp`:
+替换 `src/main.cpp` 中的 if-else 链：
 
 ```cpp
 lightWidget->setSizePreset(TrafficLightWidget::sizePresetFromString(config.windowSize()));
 ```
 
-- [ ] **Step 3: Use sizePresetFromString in SettingsDialog::onWindowSizeChanged**
+- [ ] **步骤 3：在 SettingsDialog::onWindowSizeChanged 中使用 sizePresetFromString**
 
-In `src/SettingsDialog.cpp`, simplify `onWindowSizeChanged()`:
+在 `src/SettingsDialog.cpp` 中，简化 `onWindowSizeChanged()`：
 
 ```cpp
 void SettingsDialog::onWindowSizeChanged(int index)
@@ -600,9 +600,9 @@ void SettingsDialog::onWindowSizeChanged(int index)
 }
 ```
 
-- [ ] **Step 4: Use sizePresetFromString in SettingsDialog::restoreSnapshot**
+- [ ] **步骤 4：在 SettingsDialog::restoreSnapshot 中使用 sizePresetFromString**
 
-In `src/SettingsDialog.cpp`, simplify the size restore block in `restoreSnapshot()`:
+在 `src/SettingsDialog.cpp` 中，简化 `restoreSnapshot()` 中的尺寸恢复代码块：
 
 ```cpp
 // Restore window size (preserve position)
@@ -613,7 +613,7 @@ m_lightWidget->setSizePreset(TrafficLightWidget::sizePresetFromString(m_snapSize
 resizeFloatingWindowAt(pos, false);
 ```
 
-- [ ] **Step 5: Commit**
+- [ ] **步骤 5：提交**
 
 ```bash
 git add src/TrafficLightWidget.h src/TrafficLightWidget.cpp src/main.cpp src/SettingsDialog.cpp

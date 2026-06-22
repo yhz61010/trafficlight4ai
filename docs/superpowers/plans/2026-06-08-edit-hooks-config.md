@@ -1,56 +1,56 @@
-# Edit Hooks Config Implementation Plan
+# 编辑 Hooks 配置 实现计划
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **致 agentic worker：** 必需子技能：使用 superpowers:subagent-driven-development（推荐）或 superpowers:executing-plans 来逐任务实现本计划。各步骤使用复选框（`- [ ]`）语法进行跟踪。
 
-**Goal:** Add an "Edit Hooks Config" button to SettingsDialog that opens an editor for the selected AI tool's hooks config file, with smart read/write logic for different file structures.
+**目标：** 在 SettingsDialog 中添加一个"编辑 Hooks 配置"按钮，用于打开所选 AI 工具的 hooks 配置文件编辑器，并针对不同的文件结构提供智能的读写逻辑。
 
-**Architecture:** Extend `AiToolStrategy` with two new virtual methods (`hooksConfigPath()`, `hooksIsEntireFile()`). Add a new button and slot in `SettingsDialog` that opens an editor dialog with JSON-aware read/write logic. The editor extracts/merges the `"hooks"` field for tools that embed hooks in a larger settings file.
+**架构：** 为 `AiToolStrategy` 扩展两个新的虚方法（`hooksConfigPath()`、`hooksIsEntireFile()`）。在 `SettingsDialog` 中添加一个新按钮和槽函数，用于打开带有 JSON 感知读写逻辑的编辑器对话框。对于将 hooks 嵌入到更大设置文件中的工具，该编辑器会提取/合并 `"hooks"` 字段。
 
-**Tech Stack:** C++17, Qt 6 (Core, Widgets), QJsonDocument
+**技术栈：** C++17、Qt 6（Core、Widgets）、QJsonDocument
 
 ---
 
-### Task 1: Extend AiToolStrategy interface with hooksConfigPath() and hooksIsEntireFile()
+### 任务 1：为 AiToolStrategy 接口扩展 hooksConfigPath() 和 hooksIsEntireFile()
 
-**Files:**
-- Modify: `src/AiToolStrategy.h`
-- Modify: `tests/test_ai_tool_strategy.cpp`
+**文件：**
+- 修改：`src/AiToolStrategy.h`
+- 修改：`tests/test_ai_tool_strategy.cpp`
 
-- [ ] **Step 1: Add pure virtual methods to AiToolStrategy and implement in all strategies**
+- [ ] **步骤 1：向 AiToolStrategy 添加纯虚方法并在所有策略中实现**
 
-In `src/AiToolStrategy.h`, add two new pure virtual methods to `AiToolStrategy` after `hooksTemplate()`:
+在 `src/AiToolStrategy.h` 中，在 `hooksTemplate()` 之后为 `AiToolStrategy` 添加两个新的纯虚方法：
 
 ```cpp
 virtual QString hooksConfigPath() const = 0;
 virtual bool hooksIsEntireFile() const = 0;
 ```
 
-Add `#include <QDir>` at the top (needed for `QDir::homePath()`).
+在文件顶部添加 `#include <QDir>`（`QDir::homePath()` 需要）。
 
-Implement in `CodexStrategy`:
+在 `CodexStrategy` 中实现：
 
 ```cpp
 QString hooksConfigPath() const override { return QDir::homePath() + "/.codex/hooks.json"; }
 bool hooksIsEntireFile() const override { return true; }
 ```
 
-Implement in `ClaudeCodeStrategy`:
+在 `ClaudeCodeStrategy` 中实现：
 
 ```cpp
 QString hooksConfigPath() const override { return QDir::homePath() + "/.claude/settings.json"; }
 bool hooksIsEntireFile() const override { return false; }
 ```
 
-Implement in `QoderCnStrategy`:
+在 `QoderCnStrategy` 中实现：
 
 ```cpp
 QString hooksConfigPath() const override { return QDir::homePath() + "/.qoder-cn/settings.json"; }
 bool hooksIsEntireFile() const override { return false; }
 ```
 
-- [ ] **Step 2: Add tests for new methods**
+- [ ] **步骤 2：为新方法添加测试**
 
-In `tests/test_ai_tool_strategy.cpp`, add these test slots before `registryFindsQoderCn()`:
+在 `tests/test_ai_tool_strategy.cpp` 中，在 `registryFindsQoderCn()` 之前添加这些测试槽函数：
 
 ```cpp
 void codexHooksConfigPath()
@@ -90,7 +90,7 @@ void qoderCnHooksIsNotEntireFile()
 }
 ```
 
-- [ ] **Step 3: Commit**
+- [ ] **步骤 3：提交**
 
 ```bash
 git add src/AiToolStrategy.h tests/test_ai_tool_strategy.cpp
@@ -99,29 +99,29 @@ git commit -m "feat: add hooksConfigPath() and hooksIsEntireFile() to AiToolStra
 
 ---
 
-### Task 2: Add "Edit Hooks Config" button and editor dialog to SettingsDialog
+### 任务 2：向 SettingsDialog 添加"编辑 Hooks 配置"按钮和编辑器对话框
 
-**Files:**
-- Modify: `src/SettingsDialog.h`
-- Modify: `src/SettingsDialog.cpp`
+**文件：**
+- 修改：`src/SettingsDialog.h`
+- 修改：`src/SettingsDialog.cpp`
 
-- [ ] **Step 1: Add member and slot declaration in header**
+- [ ] **步骤 1：在头文件中添加成员和槽函数声明**
 
-In `src/SettingsDialog.h`, add a new private slot after `onShowHooksTemplate()`:
+在 `src/SettingsDialog.h` 中，在 `onShowHooksTemplate()` 之后添加一个新的私有槽函数：
 
 ```cpp
 void onEditHooksConfig();
 ```
 
-Add a new member after `QPushButton *m_hooksBtn;`:
+在 `QPushButton *m_hooksBtn;` 之后添加一个新成员：
 
 ```cpp
 QPushButton *m_editHooksBtn;
 ```
 
-- [ ] **Step 2: Create the button, add to layout, and connect signal**
+- [ ] **步骤 2：创建按钮、添加到布局并连接信号**
 
-In `src/SettingsDialog.cpp` constructor, change the buttons section (around line 111-118) from:
+在 `src/SettingsDialog.cpp` 构造函数中，将按钮部分（约第 111-118 行）从：
 
 ```cpp
 // Buttons
@@ -135,7 +135,7 @@ btnLayout->addWidget(m_okBtn);
 btnLayout->addWidget(m_cancelBtn);
 ```
 
-To:
+改为：
 
 ```cpp
 // Buttons
@@ -151,24 +151,24 @@ btnLayout->addWidget(m_okBtn);
 btnLayout->addWidget(m_cancelBtn);
 ```
 
-Add signal connection after the existing `m_hooksBtn` connection (around line 158-159):
+在现有的 `m_hooksBtn` 连接之后（约第 158-159 行）添加信号连接：
 
 ```cpp
 connect(m_editHooksBtn, &QPushButton::clicked,
         this, &SettingsDialog::onEditHooksConfig);
 ```
 
-- [ ] **Step 3: Add translatable text for the new button**
+- [ ] **步骤 3：为新按钮添加可翻译文本**
 
-In `retranslateUi()`, after `m_hooksBtn->setText(...)` (line 213), add:
+在 `retranslateUi()` 中，在 `m_hooksBtn->setText(...)`（第 213 行）之后添加：
 
 ```cpp
 m_editHooksBtn->setText(tr("Edit Hooks Config"));
 ```
 
-- [ ] **Step 4: Implement onEditHooksConfig() slot**
+- [ ] **步骤 4：实现 onEditHooksConfig() 槽函数**
 
-Add these includes at the top of `src/SettingsDialog.cpp` if not already present:
+如果尚未存在，在 `src/SettingsDialog.cpp` 顶部添加这些 include：
 
 ```cpp
 #include <QJsonDocument>
@@ -178,7 +178,7 @@ Add these includes at the top of `src/SettingsDialog.cpp` if not already present
 #include <QFont>
 ```
 
-Add the slot implementation at the end of the file, before `reject()`:
+在文件末尾、`reject()` 之前添加该槽函数的实现：
 
 ```cpp
 void SettingsDialog::onEditHooksConfig()
@@ -296,7 +296,7 @@ void SettingsDialog::onEditHooksConfig()
 }
 ```
 
-- [ ] **Step 5: Commit**
+- [ ] **步骤 5：提交**
 
 ```bash
 git add src/SettingsDialog.h src/SettingsDialog.cpp
@@ -305,15 +305,15 @@ git commit -m "feat: add Edit Hooks Config button and editor dialog"
 
 ---
 
-### Task 3: Update translations
+### 任务 3：更新翻译
 
-**Files:**
-- Modify: `translations/trafficlight4ai_zh.ts`
-- Modify: `translations/trafficlight4ai_ja.ts`
+**文件：**
+- 修改：`translations/trafficlight4ai_zh.ts`
+- 修改：`translations/trafficlight4ai_ja.ts`
 
-- [ ] **Step 1: Add Chinese translations**
+- [ ] **步骤 1：添加中文翻译**
 
-In `translations/trafficlight4ai_zh.ts`, find the `SettingsDialog` context and add entries for:
+在 `translations/trafficlight4ai_zh.ts` 中，找到 `SettingsDialog` 上下文，并为以下内容添加条目：
 
 - `"Edit Hooks Config"` → `"编辑 Hooks 配置"`
 - `"Edit Hooks Config - %1"` → `"编辑 Hooks 配置 - %1"`
@@ -322,9 +322,9 @@ In `translations/trafficlight4ai_zh.ts`, find the `SettingsDialog` context and a
 - `"Save Error"` → `"保存错误"`
 - `"Cannot write to: %1"` → `"无法写入：%1"`
 
-- [ ] **Step 2: Add Japanese translations**
+- [ ] **步骤 2：添加日文翻译**
 
-In `translations/trafficlight4ai_ja.ts`, find the `SettingsDialog` context and add entries for:
+在 `translations/trafficlight4ai_ja.ts` 中，找到 `SettingsDialog` 上下文，并为以下内容添加条目：
 
 - `"Edit Hooks Config"` → `"Hooks 設定を編集"`
 - `"Edit Hooks Config - %1"` → `"Hooks 設定を編集 - %1"`
@@ -333,7 +333,7 @@ In `translations/trafficlight4ai_ja.ts`, find the `SettingsDialog` context and a
 - `"Save Error"` → `"保存エラー"`
 - `"Cannot write to: %1"` → `"書き込みできません：%1"`
 
-- [ ] **Step 3: Commit**
+- [ ] **步骤 3：提交**
 
 ```bash
 git add translations/trafficlight4ai_zh.ts translations/trafficlight4ai_ja.ts

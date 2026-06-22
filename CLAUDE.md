@@ -111,6 +111,8 @@ AppImage：GUI 主程序 `trafficlight4ai` 也接受 `red`/`yellow`/`green` 参�
 |------|------|
 | `docs/superpowers/` | superpowers 插件产物（specs/、plans/） |
 
+> superpowers 生成的文档（specs/、plans/ 等）一律使用中文编写。
+
 ## AI 交互规则
 
 - 若有不明白或不明确的地方，一定要先问我。不要自己幻想或无中生有。
