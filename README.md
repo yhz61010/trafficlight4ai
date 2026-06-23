@@ -26,14 +26,14 @@ Your AI tool's hook system triggers `tl4ai-ctl red/yellow/green` at the right mo
 
 Prebuilt archives are available from GitHub Releases:
 
-- [`trafficlight4ai-1.2.1-windows-amd64.zip`](https://github.com/yhz61010/trafficlight4ai/releases/download/v1.2.1/trafficlight4ai-1.2.1-windows-amd64.zip) — Windows build with Qt runtime files bundled by `windeployqt`.
-- [`trafficlight4ai-1.2.1-linux-amd64.deb`](https://github.com/yhz61010/trafficlight4ai/releases/download/v1.2.1/trafficlight4ai-1.2.1-linux-amd64.deb) — Ubuntu/Debian package.
-- [`trafficlight4ai-1.2.1-fedora-amd64.rpm`](https://github.com/yhz61010/trafficlight4ai/releases/download/v1.2.1/trafficlight4ai-1.2.1-fedora-amd64.rpm) — Fedora package.
-- [`trafficlight4ai-1.2.1-opensuse-amd64.rpm`](https://github.com/yhz61010/trafficlight4ai/releases/download/v1.2.1/trafficlight4ai-1.2.1-opensuse-amd64.rpm) — openSUSE Leap package.
-- [`trafficlight4ai-1.2.1-arch-amd64.pkg.tar.zst`](https://github.com/yhz61010/trafficlight4ai/releases/download/v1.2.1/trafficlight4ai-1.2.1-arch-amd64.pkg.tar.zst) — Arch Linux package.
-- [`trafficlight4ai-1.2.1-linux-amd64.AppImage`](https://github.com/yhz61010/trafficlight4ai/releases/download/v1.2.1/trafficlight4ai-1.2.1-linux-amd64.AppImage) — generic Linux AppImage.
-- [`trafficlight4ai-1.2.1-macos-arm64.zip`](https://github.com/yhz61010/trafficlight4ai/releases/download/v1.2.1/trafficlight4ai-1.2.1-macos-arm64.zip) — macOS arm64 app bundle with Qt frameworks.
-- [`SHA256SUMS.txt`](https://github.com/yhz61010/trafficlight4ai/releases/download/v1.2.1/SHA256SUMS.txt) — checksums for release archives.
+- [`trafficlight4ai-1.2.2-windows-amd64.zip`](https://github.com/yhz61010/trafficlight4ai/releases/download/v1.2.2/trafficlight4ai-1.2.2-windows-amd64.zip) — Windows build with Qt runtime files bundled by `windeployqt`.
+- [`trafficlight4ai-1.2.2-linux-amd64.deb`](https://github.com/yhz61010/trafficlight4ai/releases/download/v1.2.2/trafficlight4ai-1.2.2-linux-amd64.deb) — Ubuntu/Debian package.
+- [`trafficlight4ai-1.2.2-fedora-amd64.rpm`](https://github.com/yhz61010/trafficlight4ai/releases/download/v1.2.2/trafficlight4ai-1.2.2-fedora-amd64.rpm) — Fedora package.
+- [`trafficlight4ai-1.2.2-opensuse-amd64.rpm`](https://github.com/yhz61010/trafficlight4ai/releases/download/v1.2.2/trafficlight4ai-1.2.2-opensuse-amd64.rpm) — openSUSE Leap package.
+- [`trafficlight4ai-1.2.2-arch-amd64.pkg.tar.zst`](https://github.com/yhz61010/trafficlight4ai/releases/download/v1.2.2/trafficlight4ai-1.2.2-arch-amd64.pkg.tar.zst) — Arch Linux package.
+- [`trafficlight4ai-1.2.2-linux-amd64.AppImage`](https://github.com/yhz61010/trafficlight4ai/releases/download/v1.2.2/trafficlight4ai-1.2.2-linux-amd64.AppImage) — generic Linux AppImage.
+- [`trafficlight4ai-1.2.2-macos-arm64.zip`](https://github.com/yhz61010/trafficlight4ai/releases/download/v1.2.2/trafficlight4ai-1.2.2-macos-arm64.zip) — macOS arm64 app bundle with Qt frameworks.
+- [`SHA256SUMS.txt`](https://github.com/yhz61010/trafficlight4ai/releases/download/v1.2.2/SHA256SUMS.txt) — checksums for release archives.
 
 Linux distro packages are dynamically linked and target the named distribution family. For other distributions, use the AppImage or build from source using [docs/BUILD.md](docs/BUILD.md). macOS (12 or later) release packages are supported by the release workflow for new releases after macOS support lands.
 
@@ -96,7 +96,7 @@ cp build/tools/tl4ai-ctl ~/.local/bin/
 **Option C** — AppImage: use the real `.AppImage` path with the state word directly. The bundled `tl4ai-ctl` lives in a temporary mount (`/tmp/.mount_*`) that changes on every launch, so never reference it in a saved hook. Replace `tl4ai-ctl` with the AppImage path shown by the Settings dialog, e.g.:
 
 ```
-/home/you/Downloads/trafficlight4ai-1.2.1-linux-amd64.AppImage red
+/home/you/Downloads/trafficlight4ai-1.2.2-linux-amd64.AppImage red
 ```
 
 ### 3. Configure hooks for your AI tool
