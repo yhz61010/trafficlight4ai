@@ -109,9 +109,13 @@ AppImage：GUI 主程序 `trafficlight4ai` 也接受 `red`/`yellow`/`green` 参�
 
 | 路径 | 用途 |
 |------|------|
-| `docs/superpowers/` | superpowers 插件产物（specs/、plans/） |
+| `docs/superpowers/specs/` | superpowers 设计文档（brainstorm 产物） |
+| `docs/superpowers/plans/` | superpowers 实现计划（writing-plans 产物） |
 
-> superpowers 生成的文档（specs/、plans/ 等）一律使用中文编写。
+> **superpowers 产物存放规则**（覆盖 skill 默认的 `docs/superpowers/` 路径）：
+> - 使用 brainstorm（`superpowers:brainstorming`）技能生成的**设计文档**保存到 `docs/superpowers/specs/`
+> - 使用 `superpowers:writing-plans` 技能生成的**实现计划**保存到 `docs/superpowers/plans/`
+> - 文件名格式 `YYYY-MM-DD-<topic>.md`，superpowers 生成的所有文档一律使用中文编写。
 
 ## AI 交互规则
 
